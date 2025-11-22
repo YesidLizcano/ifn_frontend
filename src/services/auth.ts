@@ -1,5 +1,5 @@
 // Servicio de autenticación
-// Usa variable de entorno REACT_APP_API_AUTH_URL para construir endpoint
+// Usa únicamente la variable de entorno REACT_APP_API_AUTH_URL definida en Vercel
 
 export interface AuthSuccessResponse {
   access_token: string;
@@ -12,10 +12,10 @@ export interface AuthSuccessResponse {
 
 export async function login(email: string, password: string): Promise<AuthSuccessResponse> {
   const baseUrl = process.env.REACT_APP_API_AUTH_URL;
+  // Solo se usa la variable de entorno inyectada por Vercel en build
   if (!baseUrl) {
-    throw new Error('Variable REACT_APP_API_AUTH_URL no definida');
+    throw new Error('Variable REACT_APP_API_AUTH_URL no definida en entorno de despliegue');
   }
-
   const url = `${baseUrl.replace(/\/$/, '')}/auth/login`;
 
   const respuesta = await fetch(url, {
