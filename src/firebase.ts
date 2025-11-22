@@ -34,7 +34,7 @@ if (!firebaseConfig.apiKey) {
   console.warn('Firebase: Falta REACT_APP_FIREBASE_API_KEY. Revisa tus variables de entorno.');
 }
 
-export const firebaseApp = initializeApp(firebaseConfig as Record<string, string>);
+export const firebaseApp = initializeApp(firebaseConfig as unknown as Record<string, string>);
 
 // Inicializa Analytics sólo en navegador y si measurementId está definido
 let analytics: Analytics | undefined;
