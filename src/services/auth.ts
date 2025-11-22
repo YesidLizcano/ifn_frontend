@@ -30,10 +30,10 @@ export async function login(email: string, password: string): Promise<AuthSucces
   });
 
   if (!respuesta.ok) {
-    let detalle = 'Credenciales inválidas';
+    let detalle = 'Error desconocido';
     try {
       const data = await respuesta.json();
-      if (data?.message) detalle = data.message;
+      if (typeof data?.message === 'string') detalle = data.message;
     } catch (_) {
       // ignorar parse error
     }
