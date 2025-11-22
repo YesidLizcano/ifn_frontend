@@ -17,7 +17,10 @@ export async function login(email: string, password: string): Promise<AuthSucces
     throw new Error('Variable REACT_APP_API_AUTH_URL no definida en entorno de despliegue');
   }
   const url = `${baseUrl.replace(/\/$/, '')}/auth/login`;
-
+  console.log(`URL ${url}`); 
+  console.log(`Email ${email}`); 
+  console.log(`Password ${password}`); 
+  
   const respuesta = await fetch(url, {
     method: 'POST',
     headers: {
