@@ -29,7 +29,7 @@ const firebaseConfigClean = {
 };
 
 // Inicializa la app sólo si la clave principal existe
-if (!firebaseConfig.apiKey) {
+if (!firebaseConfigClean.apiKey) {
   // Aviso en desarrollo si falta configuración
   // eslint-disable-next-line no-console
   console.warn('Firebase: Falta REACT_APP_FIREBASE_API_KEY. Revisa tus variables de entorno.');
