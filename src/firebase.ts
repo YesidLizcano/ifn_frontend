@@ -39,7 +39,7 @@ export const firebaseApp = initializeApp(firebaseConfigClean);
 
 // Inicializa Analytics sólo en navegador y si measurementId está definido
 let analytics: Analytics | undefined;
-if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+if (typeof window !== 'undefined' && firebaseConfigClean.measurementId) {
   try {
     analytics = getAnalytics(firebaseApp);
   } catch (e) {
