@@ -10,6 +10,7 @@ import {
   Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { login as authLogin } from '../services/auth';
 
 // Componentes de íconos alternativos
 const UserIcon = () => (
@@ -60,26 +61,19 @@ const Login: React.FC = () => {
     }
 
     try {
-      // Simular tiempo de carga
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Credenciales fijas: admin/admin
-      if (credenciales.usuario === 'admin' && credenciales.contraseña === 'admin') {
-        // Login exitoso
-        localStorage.setItem('usuarioAutenticado', 'true');
-        
-        // Disparar eventos para notificar a otros componentes
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new Event('authStateChange'));
-        
-        alert('¡Login exitoso! Bienvenido admin.');
-        navigate('/');
-      } else {
-        setError('Usuario o contraseña incorrectos. Use admin/admin');
-      }
-
-    } catch (error) {
-      setError('Error al iniciar sesión. Intente nuevamente.');
+      const respuesta = await authLogin(credenciales.usuario, credenciales.contraseña);
+      // Guardar token y datos de usuario
+      localStorage.setItem('access_token', respuesta.access_token);
+      localStorage.setItem('usuarioAutenticado', 'true');
+      localStorage.setItem('usuarioEmail', respuesta.user.email);
+      localStorage.setItem('usuarioNombre', respuesta.user.name);
+      // Notificar a otros componentes
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authStateChange'));
+      navigate('/');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setError(msg);
     } finally {
       setCargando(false);
     }

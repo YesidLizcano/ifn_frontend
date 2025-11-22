@@ -32,3 +32,32 @@ REACT_APP_FIREBASE_MEASUREMENT_ID=TU_MEASUREMENT_ID_OPCIONAL
 ```
 
 La inicialización se encuentra en `src/firebase.ts` y ya usa estas variables. No coloques los valores reales en el repositorio.
+
+## Autenticación (Login)
+
+Definir también la variable base del microservicio de autenticación:
+
+```
+REACT_APP_API_AUTH_URL=https://auth-service-backend-xps2.onrender.com
+```
+
+La función de login usa `POST ${REACT_APP_API_AUTH_URL}/auth/login` enviando:
+
+```json
+{
+	"email": "correo",
+	"password": "contraseña"
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+	"access_token": "TOKEN_JWT_GENERADO",
+	"token_type": "bearer",
+	"user": {"name": "Nombre", "email": "correo"}
+}
+```
+
+El token y datos se guardan en `localStorage` (`access_token`, `usuarioAutenticado`, `usuarioEmail`, `usuarioNombre`).
