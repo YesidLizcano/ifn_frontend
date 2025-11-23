@@ -1,32 +1,14 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  Checkbox,
-  Container,
-  FormControlLabel,
-  TextField,
-  Typography,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  import React, { useState } from 'react';
-  import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
-  import { verificarCoordenadasEnColombia } from '../../services/core';
+import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
+import { verificarCoordenadasEnColombia } from '../../services/core';
 
   const MAX_CONGLOMERADOS = 20;
 
-  const generarCoordenadaAleatoria = () => {
+  const generarCoordenadaAleatoria = (): [number, number] => {
     // Colombia continental aproximada
-    const latitud = Math.random() * (13.5 - 1.8) + 1.8;
-    const longitud = Math.random() * (-66 - -79) + -79;
-    return {
-      latitud: parseFloat(latitud.toFixed(6)),
-      longitud: parseFloat(longitud.toFixed(6))
-    };
+    const latitud = parseFloat((Math.random() * (13.5 - 1.8) + 1.8).toFixed(6));
+    const longitud = parseFloat((Math.random() * (-66 - -79) + -79).toFixed(6));
+    return [latitud, longitud];
   };
 
   type ConglomeradoVerificado = [number, number, string, string, string];
@@ -52,7 +34,7 @@ import {
       }
 
       setCargando(true);
-      const coordenadasGeneradas = Array.from({ length: cantidadNumerica }, () => generarCoordenadaAleatoria());
+      const coordenadasGeneradas: [number, number][] = Array.from({ length: cantidadNumerica }, () => generarCoordenadaAleatoria());
       const token = localStorage.getItem('access_token') || '';
       try {
         const verificadas: ConglomeradoVerificado[] = await verificarCoordenadasEnColombia(coordenadasGeneradas, token);
