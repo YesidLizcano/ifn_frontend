@@ -1,14 +1,23 @@
 // Servicio para verificación geográfica de conglomerados en IFN-CORE
 
+
 export interface Coordenada {
   latitud: number;
   longitud: number;
 }
 
+export interface ConglomeradoVerificado {
+  lat: number;
+  lon: number;
+  departamento: string;
+  municipio: string;
+  region: string;
+}
+
 export async function verificarCoordenadasEnColombia(
   coordenadas: Coordenada[],
   token: string
-): Promise<Coordenada[]> {
+): Promise<ConglomeradoVerificado[]> {
   const baseUrl = process.env.REACT_APP_API_CORE_URL;
   if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
   const url = `${baseUrl.replace(/\/$/, '')}/conglomerados/verificar-en-colombia`;
