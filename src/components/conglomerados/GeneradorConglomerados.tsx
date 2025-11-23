@@ -157,10 +157,10 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                               size="small"
                               sx={{ mr: 1 }}
                               onClick={() => {
-                                alert(`Conglomerado ${c.municipio} asignado y guardado en BD`);
+                                alert(`Conglomerado ${c.municipio} guardado en BD`);
                               }}
                             >
-                              Asignar
+                              Guardar
                             </Button>
                             <Button
                               variant="outlined"
