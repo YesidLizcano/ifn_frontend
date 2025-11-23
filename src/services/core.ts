@@ -22,13 +22,14 @@ export async function verificarCoordenadasEnColombia(
   if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
   const url = `${baseUrl.replace(/\/$/, '')}/conglomerados/verificar-en-colombia`;
 
+  const puntos = coordenadas.map(c => ({ lat: c.latitud, lon: c.longitud }));
   const respuesta = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify(coordenadas),
+    body: JSON.stringify({ puntos }),
   });
 
   if (!respuesta.ok) {
