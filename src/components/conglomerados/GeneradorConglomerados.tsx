@@ -146,9 +146,8 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                               size="small"
                               sx={{ mr: 1 }}
                               onClick={() => {
-                                alert(`Conglomerado ${c.id} asignado y guardado en BD`);
+                                alert(`Conglomerado ${c.municipio} asignado y guardado en BD`);
                               }}
-                              // Puedes agregar lógica de deshabilitado si lo necesitas
                             >
                               Asignar
                             </Button>
@@ -157,8 +156,8 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                               color="error"
                               size="small"
                               onClick={() => {
-                                // Elimina el conglomerado de la lista
-                                setConglomerados(prev => prev.filter(cong => cong.id !== c.id));
+                                // Elimina el conglomerado de la lista usando el índice
+                                setConglomerados(prev => prev.filter((_, i) => i !== index));
                               }}
                             >
                               Eliminar
