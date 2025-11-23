@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MapaColombia from './MapaColombia';
 import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
 import { verificarCoordenadasEnColombia } from '../../services/core';
 
@@ -63,6 +64,9 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
       setCargando(false);
     };
 
+    // Transformar conglomerados verificados a coordenadas para el mapa
+    const coordenadasMapa = conglomerados.map(c => ({ latitud: c.lat, longitud: c.lon }));
+
     return (
       <Box
         sx={{
@@ -84,7 +88,7 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, mb: 3 }}>
               <Box sx={{ flex: { lg: 7 } }}>
-                {/* Aquí podrías agregar el mapa si lo necesitas */}
+                <MapaColombia conglomerados={coordenadasMapa} />
               </Box>
 
               <Box sx={{ flex: { lg: 3 }, minWidth: { lg: '350px' }, mt: 4 }}>
