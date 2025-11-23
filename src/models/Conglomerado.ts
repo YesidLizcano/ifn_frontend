@@ -5,9 +5,6 @@ export interface Coordenada {
   region: string;          // puede seguir existiendo
   departamento: string;    // nuevo
   municipio: string;       // nuevo
-  tipo: string;            // nuevo (por ejemplo nombre de la zona)
-  estaEnBosque: boolean;
-  fechaCreacion: Date;
 }
 
 export interface ConglomeradoForm {

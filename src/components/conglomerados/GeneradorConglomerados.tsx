@@ -65,7 +65,14 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
     };
 
     // Transformar conglomerados verificados a coordenadas para el mapa
-    const coordenadasMapa = conglomerados.map(c => ({ latitud: c.lat, longitud: c.lon }));
+    const coordenadasMapa = conglomerados.map((c, idx) => ({
+      id: idx + 1,
+      latitud: c.lat,
+      longitud: c.lon,
+      region: c.region,
+      departamento: c.departamento,
+      municipio: c.municipio
+    }));
 
     return (
       <Box
