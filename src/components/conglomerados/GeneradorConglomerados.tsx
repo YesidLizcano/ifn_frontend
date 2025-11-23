@@ -136,9 +136,34 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                       <TableRow key={index}>
                         <TableCell>{c.lat}</TableCell>
                         <TableCell>{c.lon}</TableCell>
-                        <TableCell>{c.municipio}</TableCell>
-                        <TableCell>{c.departamento}</TableCell>
-                        <TableCell>{c.region}</TableCell>
+                          <TableCell>{c.municipio}</TableCell>
+                          <TableCell>{c.departamento}</TableCell>
+                          <TableCell>{c.region}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              size="small"
+                              sx={{ mr: 1 }}
+                              onClick={() => {
+                                alert(`Conglomerado ${c.id} asignado y guardado en BD`);
+                              }}
+                              // Puedes agregar lógica de deshabilitado si lo necesitas
+                            >
+                              Asignar
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => {
+                                // Elimina el conglomerado de la lista
+                                setConglomerados(prev => prev.filter(cong => cong.id !== c.id));
+                              }}
+                            >
+                              Eliminar
+                            </Button>
+                          </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
