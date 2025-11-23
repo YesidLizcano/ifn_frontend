@@ -40,18 +40,26 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
       }
 
       setCargando(true);
-      const coordenadasGeneradas: { latitud: number; longitud: number }[] = Array.from({ length: cantidadNumerica }, () => {
-        const latitud = parseFloat((Math.random() * (13.5 - 1.8) + 1.8).toFixed(6));
-        const longitud = parseFloat((Math.random() * (-66 - -79) + -79).toFixed(6));
-        return { latitud, longitud };
-      });
       const token = localStorage.getItem('access_token') || '';
-      try {
-        const verificadas: ConglomeradoVerificado[] = await verificarCoordenadasEnColombia(coordenadasGeneradas, token);
-        setConglomerados(verificadas);
-      } catch (error) {
-        alert('Error al verificar coordenadas en backend: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      let verificados: ConglomeradoVerificado[] = [];
+      let intentos = 0;
+      while (verificados.length < cantidadNumerica && intentos < 20) {
+        const faltantes = cantidadNumerica - verificados.length;
+        const coordenadasGeneradas: { latitud: number; longitud: number }[] = Array.from({ length: faltantes }, () => {
+          const latitud = parseFloat((Math.random() * (13.5 - 1.8) + 1.8).toFixed(6));
+          const longitud = parseFloat((Math.random() * (-66 - -79) + -79).toFixed(6));
+          return { latitud, longitud };
+        });
+        try {
+          const nuevos: ConglomeradoVerificado[] = await verificarCoordenadasEnColombia(coordenadasGeneradas, token);
+          verificados = verificados.concat(nuevos);
+        } catch (error) {
+          alert('Error al verificar coordenadas en backend: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+          break;
+        }
+        intentos++;
       }
+      setConglomerados(verificados.slice(0, cantidadNumerica));
       setCargando(false);
     };
 
