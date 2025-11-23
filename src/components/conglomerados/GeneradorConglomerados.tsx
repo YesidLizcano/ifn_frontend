@@ -11,7 +11,13 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
     return [latitud, longitud];
   };
 
-  type ConglomeradoVerificado = [number, number, string, string, string];
+  interface ConglomeradoVerificado {
+    lat: number;
+    lon: number;
+    departamento: string;
+    municipio: string;
+    region: string;
+  }
 
   const GeneradorConglomerados: React.FC = () => {
     const [cantidad, setCantidad] = useState('');
@@ -34,7 +40,11 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
       }
 
       setCargando(true);
-      const coordenadasGeneradas: [number, number][] = Array.from({ length: cantidadNumerica }, () => generarCoordenadaAleatoria());
+      const coordenadasGeneradas: { latitud: number; longitud: number }[] = Array.from({ length: cantidadNumerica }, () => {
+        const latitud = parseFloat((Math.random() * (13.5 - 1.8) + 1.8).toFixed(6));
+        const longitud = parseFloat((Math.random() * (-66 - -79) + -79).toFixed(6));
+        return { latitud, longitud };
+      });
       const token = localStorage.getItem('access_token') || '';
       try {
         const verificadas: ConglomeradoVerificado[] = await verificarCoordenadasEnColombia(coordenadasGeneradas, token);
@@ -116,11 +126,11 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                   <TableBody>
                     {conglomerados.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((c, index) => (
                       <TableRow key={index}>
-                        <TableCell>{c[0]}</TableCell>
-                        <TableCell>{c[1]}</TableCell>
-                        <TableCell>{c[3]}</TableCell>
-                        <TableCell>{c[2]}</TableCell>
-                        <TableCell>{c[4]}</TableCell>
+                        <TableCell>{c.lat}</TableCell>
+                        <TableCell>{c.lon}</TableCell>
+                        <TableCell>{c.municipio}</TableCell>
+                        <TableCell>{c.departamento}</TableCell>
+                        <TableCell>{c.region}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
