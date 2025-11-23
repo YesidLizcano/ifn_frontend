@@ -18,27 +18,17 @@ const ConglomeradoCircles: React.FC<{ conglomerados: Coordenada[] }> = ({ conglo
     <>
       {conglomerados.map((conglomerado, index) => {
         const numeroConglomerado = index + 1;
-        
         return (
           <Circle
             key={conglomerado.id}
             center={[conglomerado.latitud, conglomerado.longitud]}
             radius={15000}
-            pathOptions={conglomerado.estaEnBosque ? {
-              // Estilo para conglomerados VÁLIDOS (en zona boscosa)
+            pathOptions={{
               fillColor: '#4CAF50',
               color: '#2E7D32',
               fillOpacity: 0.4,
               opacity: 0.8,
               weight: 3
-            } : {
-              // Estilo para conglomerados NO VÁLIDOS (mar o fuera de bosque)
-              fillColor: '#f44336',
-              color: '#c62828',
-              fillOpacity: 0.3,
-              opacity: 0.7,
-              weight: 2,
-              dashArray: '5, 5'
             }}
             eventHandlers={{
               click: (e) => {
@@ -46,7 +36,7 @@ const ConglomeradoCircles: React.FC<{ conglomerados: Coordenada[] }> = ({ conglo
                   .setLatLng(e.latlng)
                   .setContent(`
                     <div style="padding: 10px; min-width: 250px;">
-                      <strong style="font-size: 14px; color: ${conglomerado.estaEnBosque ? '#2E7D32' : '#d32f2f'};">
+                      <strong style="font-size: 14px; color: #2E7D32;">
                         Conglomerado #${numeroConglomerado}
                       </strong>
                       <br />
@@ -61,24 +51,6 @@ const ConglomeradoCircles: React.FC<{ conglomerados: Coordenada[] }> = ({ conglo
                       <strong>Departamento:</strong> ${conglomerado.departamento}
                       <br />
                       <strong>Municipio:</strong> ${conglomerado.municipio}
-                      <br />
-                      <strong>Tipo:</strong> ${conglomerado.tipo}
-                      <br />
-                      <strong>Estado:</strong> 
-                      ${conglomerado.estaEnBosque ?
-                      '<span style="color: green; font-weight: bold;">✅ EN ZONA BOSCOSA</span>' :
-                      '<span style="color: red; font-weight: bold;">❌ NO VÁLIDO</span>'
-                    }
-                      <br />
-                      <strong>Fecha:</strong> ${conglomerado.fechaCreacion.toLocaleDateString()}
-                      <br /><br />
-                      ${!conglomerado.estaEnBosque ?
-                      (conglomerado.departamento === 'Mar' ?
-                        '<small style="color: #666;"><em>🌊 Este conglomerado está en el mar - No válido para inventario forestal</em></small>' :
-                        '<small style="color: #666;"><em>⚠️ Este conglomerado no está en zona boscosa válida</em></small>'
-                      ) :
-                      '<small style="color: #666;"><em>🌳 Este conglomerado está en zona boscosa válida</em></small>'
-                    }
                     </div>
                   `)
                   .openOn(map);
@@ -112,7 +84,6 @@ const MapaColombia: React.FC<MapaColombiaProps> = ({ conglomerados, onConglomera
         {/* Marcadores adicionales para mejor visibilidad */}
         {conglomerados.map((conglomerado, index) => {
           const numeroConglomerado = index + 1;
-          
           return (
             <Marker
               key={`marker-${conglomerado.id}`}
@@ -121,7 +92,7 @@ const MapaColombia: React.FC<MapaColombiaProps> = ({ conglomerados, onConglomera
                 className: 'custom-marker',
                 html: `
                   <div style="
-                    background-color: ${conglomerado.estaEnBosque ? '#4CAF50' : '#f44336'};
+                    background-color: #4CAF50;
                     color: white;
                     width: 28px;
                     height: 28px;
@@ -155,18 +126,7 @@ const MapaColombia: React.FC<MapaColombiaProps> = ({ conglomerados, onConglomera
                   <strong>Ubicación:</strong><br />
                   {conglomerado.municipio}, {conglomerado.departamento}
                   <br />
-                  <strong>Región/Tipo:</strong> {conglomerado.tipo}
-                  <br />
-                  <strong>Estado:</strong><br />
-                  <span style={{ 
-                    color: conglomerado.estaEnBosque ? 'green' : 'red', 
-                    fontWeight: 'bold' 
-                  }}>
-                    {conglomerado.estaEnBosque ? '✅ Válido (Bosque)' : '❌ No válido'}
-                  </span>
-                  <br />
-                  <strong>Fecha creación:</strong><br />
-                  {conglomerado.fechaCreacion.toLocaleString()}
+                  <strong>Región:</strong> {conglomerado.region}
                 </div>
               </Popup>
             </Marker>
@@ -195,17 +155,7 @@ const MapaColombia: React.FC<MapaColombiaProps> = ({ conglomerados, onConglomera
             borderRadius: '50%',
             marginRight: '5px'
           }}></div>
-          ✅ Válido (bosque)
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', margin: '2px 0' }}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            backgroundColor: '#f44336',
-            borderRadius: '50%',
-            marginRight: '5px'
-          }}></div>
-          ❌ No válido
+          Conglomerado generado
         </div>
         <div style={{ marginTop: '5px', fontSize: '10px', color: '#666' }}>
           Total: {conglomerados.length} conglomerados
@@ -213,25 +163,7 @@ const MapaColombia: React.FC<MapaColombiaProps> = ({ conglomerados, onConglomera
       </div>
 
       {/* Información de estado */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        backgroundColor: 'white',
-        padding: '10px',
-        borderRadius: '5px',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-        zIndex: 1000,
-        fontSize: '12px'
-      }}>
-        <strong>Estadísticas:</strong><br />
-        <div style={{ color: 'green' }}>
-          ✅ Válidos: {conglomerados.filter(c => c.estaEnBosque).length}
-        </div>
-        <div style={{ color: 'red' }}>
-          ❌ No válidos: {conglomerados.filter(c => !c.estaEnBosque).length}
-        </div>
-      </div>
+      {/* Información de estado eliminada porque ya no hay validación de bosque */}
     </div>
   );
 };
