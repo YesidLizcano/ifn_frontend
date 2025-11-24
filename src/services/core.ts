@@ -79,3 +79,43 @@ export async function verificarCoordenadasEnColombia(
 
   return await respuesta.json();
 }
+
+// Listar conglomerados desde IFN-CORE
+export interface RawConglomeradoResponse {
+  fechaInicio: string | null;
+  fechaFinAprox: string | null;
+  fechaFin: string | null;
+  latitud: number;
+  longitud: number;
+  municipio_id?: number;
+  id: number;
+  municipio_nombre: string;
+  departamento_nombre: string;
+  region: string;
+  estado: string;
+}
+
+export async function listarConglomerados(token: string): Promise<RawConglomeradoResponse[]> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/conglomerados`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al listar conglomerados';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}

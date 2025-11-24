@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { listarConglomerados } from '../services/core';
 import {
   Box,
   Card,
@@ -77,60 +78,32 @@ const GestionarConglomerados: React.FC = () => {
   const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
 
-  // Simular carga de datos
+  // Cargar conglomerados desde backend
   useEffect(() => {
     const cargarConglomerados = async () => {
       setLoading(true);
       try {
-        // Datos de ejemplo
-        const datosEjemplo: Conglomerado[] = [
-          {
-            id: 'CONG-001',
-            latitud: 4.60971,
-            longitud: -74.08175,
-            departamento: 'Cundinamarca',
-            municipio: 'Bogotá',
-            region: 'Andina',
-            tipo: 'Bosque andino',
-            fechaInicio: '2024-01-15',
-            fechaFinAprox: '2024-03-15',
-            investigado: false,
-            estado: 'asignado',
-            fechaCreacion: '2024-01-15',
-            brigada: 'BRG-001'
-          },
-          {
-            id: 'CONG-002',
-            latitud: 6.24420,
-            longitud: -75.58121,
-            departamento: 'Antioquia',
-            municipio: 'Medellín',
-            region: 'Andina',
-            tipo: 'Bosque protector',
-            fechaInicio: '2024-01-16',
-            fechaFinAprox: '2024-03-16',
-            investigado: true,
-            estado: 'pendiente',
-            fechaCreacion: '2024-01-16'
-          },
-          {
-            id: 'CONG-003',
-            latitud: 3.45165,
-            longitud: -76.53198,
-            departamento: 'Valle del Cauca',
-            municipio: 'Cali',
-            region: 'Pacífica',
-            tipo: 'Bosque seco tropical',
-            fechaInicio: '2024-01-10',
-            fechaFinAprox: '2024-03-10',
-            investigado: false,
-            estado: 'completado',
-            fechaCreacion: '2024-01-10',
-            brigada: 'BRG-002'
-          }
-        ];
-        
-        setConglomerados(datosEjemplo);
+        const token = localStorage.getItem('access_token') || '';
+        const datos = await listarConglomerados(token);
+
+        // Mapear respuesta a la interfaz local Conglomerado
+        const mapped: Conglomerado[] = datos.map(d => ({
+          id: `CONG-${d.municipio_nombre}`,
+          latitud: d.latitud,
+          longitud: d.longitud,
+          departamento: d.departamento_nombre,
+          municipio: d.municipio_nombre,
+          region: d.region,
+          // eliminamos tipo, investigado, brigada, fechaCreacion
+          tipo: '',
+          fechaInicio: d.fechaInicio || '',
+          fechaFinAprox: d.fechaFinAprox || '',
+          investigado: false,
+          estado: (d.estado as any) || 'Sin Asignar',
+          fechaCreacion: '',
+        }));
+
+        setConglomerados(mapped);
       } catch (error) {
         console.error('Error cargando conglomerados:', error);
       } finally {
