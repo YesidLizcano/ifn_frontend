@@ -119,3 +119,50 @@ export async function listarConglomerados(token: string): Promise<RawConglomerad
 
   return await respuesta.json();
 }
+
+// Integrantes - listar por región y rol
+export interface Integrante {
+  id: number;
+  nombre: string;
+  rol: string;
+  // otros campos que el backend pueda devolver se pueden añadir aquí
+  [key: string]: any;
+}
+
+/**
+ * Lista integrantes activos de la misma región que el departamento especificado,
+ * disponibles en el rango de fechas y que tienen el rol especificado.
+ * Endpoint: GET /integrantes/region/{departamento_id}?fechainicio=...&fechaFinAprox=...&rol=...
+ */
+export async function listarIntegrantesPorRegion(
+  departamento: string,
+  fechaInicio: string,
+  fechaFinAprox: string,
+  rol: string,
+  token: string
+): Promise<Integrante[]> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const cleaned = baseUrl.replace(/\/$/, '');
+  const url = `${cleaned}/integrantes/region/${encodeURIComponent(departamento)}` +
+    `?fechainicio=${encodeURIComponent(fechaInicio || '')}&fechaFinAprox=${encodeURIComponent(fechaFinAprox || '')}&rol=${encodeURIComponent(rol || '')}`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al listar integrantes por región';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { listarConglomerados } from '../services/core';
+import { listarConglomerados, listarIntegrantesPorRegion, Integrante } from '../services/core';
+import { MenuItem } from '@mui/material';
 import {
   Box,
   Card,
@@ -28,6 +29,7 @@ interface Conglomerado {
   region: string;
   fechaInicio: string;
   fechaFinAprox: string;
+  municipio_id?: number;
   estado: 'asignado' | 'pendiente' | 'completado' | 'cancelado' | 'Sin Asignar';
   observaciones?: string;
 }
@@ -72,6 +74,8 @@ const GestionarConglomerados: React.FC = () => {
   const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign' | 'assignDates'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
   const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: string; auxiliarTecnicos: string[]; botanicos: string[]; coinvestigadores: string[] }>({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
+  const [integrantesByRole, setIntegrantesByRole] = useState<Record<string, Integrante[]>>({});
+  const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
 
   // Cargar conglomerados desde backend
   useEffect(() => {
@@ -91,6 +95,7 @@ const GestionarConglomerados: React.FC = () => {
           region: d.region,
           fechaInicio: d.fechaInicio || '',
           fechaFinAprox: d.fechaFinAprox || '',
+          municipio_id: d.municipio_id ?? undefined,
           estado: (d.estado as any) || 'Sin Asignar',
         }));
 
@@ -120,6 +125,8 @@ const GestionarConglomerados: React.FC = () => {
     if (type === 'assign') {
       // Inicializar datos de brigada al asignar (ahora con arrays)
       setBrigadaData({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
+      // limpiar integrantes anteriores
+      setIntegrantesByRole({});
     } else {
       setEditData({
         fechaInicio: conglomerado.fechaInicio,
@@ -128,6 +135,43 @@ const GestionarConglomerados: React.FC = () => {
     }
     setDialogOpen(true);
   };
+
+  // Cuando se abre el diálogo 'assign', obtener integrantes por rol (si hay departamento_id)
+  useEffect(() => {
+    const cargarIntegrantes = async () => {
+      if (dialogType !== 'assign' || !selectedConglomerado) return;
+      const departamentoNombre = selectedConglomerado.departamento;
+      if (!departamentoNombre) {
+        console.warn('No hay nombre de departamento en el conglomerado; no se podrán listar integrantes por región automáticamente');
+        return;
+      }
+
+      const token = localStorage.getItem('access_token') || '';
+      setLoadingIntegrantes(true);
+      try {
+        const inicio = selectedConglomerado.fechaInicio || '';
+        const fin = selectedConglomerado.fechaFinAprox || '';
+
+        const rolesToFetch = ['auxiliar_tecnico', 'botanico', 'jefe_brigada'];
+        const results: Record<string, Integrante[]> = {};
+        for (const rol of rolesToFetch) {
+          try {
+            const res = await listarIntegrantesPorRegion(departamentoNombre, inicio, fin, rol, token);
+            results[rol] = res || [];
+          } catch (err) {
+            console.warn(`Error cargando integrantes para rol ${rol}:`, err);
+            results[rol] = [];
+          }
+        }
+
+        setIntegrantesByRole(results);
+      } finally {
+        setLoadingIntegrantes(false);
+      }
+    };
+
+    cargarIntegrantes();
+  }, [dialogType, selectedConglomerado]);
 
   // Helpers para manejar arrays dinámicos en brigadaData
   const addArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores') => {
@@ -572,24 +616,62 @@ const GestionarConglomerados: React.FC = () => {
                 )}
                 {dialogType === 'assign' && (
                   <Box sx={{ mt: 2 }}>
-                    <TextField
-                      fullWidth
-                      label="Jefe de Brigada"
-                      value={brigadaData.jefeBrigada}
-                      onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
-                      sx={{ mb: 2 }}
-                    />
+                    {/* Jefe de brigada: select si hay resultados, fallback a texto */}
+                    {integrantesByRole['jefe_brigada'] && integrantesByRole['jefe_brigada'].length > 0 ? (
+                      <TextField
+                        select
+                        fullWidth
+                        label="Jefe de Brigada"
+                        value={brigadaData.jefeBrigada}
+                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
+                        sx={{ mb: 2 }}
+                      >
+                        {loadingIntegrantes ? (
+                          <MenuItem value="">Cargando...</MenuItem>
+                        ) : (
+                          integrantesByRole['jefe_brigada'].map(i => (
+                            <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                          ))
+                        )}
+                      </TextField>
+                    ) : (
+                      <TextField
+                        fullWidth
+                        label="Jefe de Brigada"
+                        value={brigadaData.jefeBrigada}
+                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
+                        sx={{ mb: 2 }}
+                      />
+                    )}
 
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" sx={{ mb: 1 }}>Auxiliares Técnicos</Typography>
                       {brigadaData.auxiliarTecnicos.map((a, idx) => (
                         <Box key={`aux-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          <TextField
-                            fullWidth
-                            value={a}
-                            onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
-                            placeholder={`Auxiliar ${idx + 1}`}
-                          />
+                          {integrantesByRole['auxiliar_tecnico'] && integrantesByRole['auxiliar_tecnico'].length > 0 ? (
+                            <TextField
+                              select
+                              fullWidth
+                              value={a}
+                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
+                              placeholder={`Auxiliar ${idx + 1}`}
+                            >
+                              {loadingIntegrantes ? (
+                                <MenuItem value="">Cargando...</MenuItem>
+                              ) : (
+                                integrantesByRole['auxiliar_tecnico'].map(i => (
+                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                                ))
+                              )}
+                            </TextField>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              value={a}
+                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
+                              placeholder={`Auxiliar ${idx + 1}`}
+                            />
+                          )}
                           <Button size="small" variant="outlined" onClick={() => removeArrayItem('auxiliarTecnicos', idx)}>-</Button>
                         </Box>
                       ))}
@@ -600,12 +682,30 @@ const GestionarConglomerados: React.FC = () => {
                       <Typography variant="body2" sx={{ mb: 1 }}>Botánicos</Typography>
                       {brigadaData.botanicos.map((b, idx) => (
                         <Box key={`bot-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          <TextField
-                            fullWidth
-                            value={b}
-                            onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
-                            placeholder={`Botánico ${idx + 1}`}
-                          />
+                          {integrantesByRole['botanico'] && integrantesByRole['botanico'].length > 0 ? (
+                            <TextField
+                              select
+                              fullWidth
+                              value={b}
+                              onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
+                              placeholder={`Botánico ${idx + 1}`}
+                            >
+                              {loadingIntegrantes ? (
+                                <MenuItem value="">Cargando...</MenuItem>
+                              ) : (
+                                integrantesByRole['botanico'].map(i => (
+                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                                ))
+                              )}
+                            </TextField>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              value={b}
+                              onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
+                              placeholder={`Botánico ${idx + 1}`}
+                            />
+                          )}
                           <Button size="small" variant="outlined" onClick={() => removeArrayItem('botanicos', idx)}>-</Button>
                         </Box>
                       ))}
