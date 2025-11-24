@@ -414,7 +414,7 @@ const GestionarConglomerados: React.FC = () => {
                       color="primary"
                       size="small"
                       startIcon={<EditIcon />}
-                      onClick={() => handleOpenDialog(conglomerado, 'edit')}
+                      onClick={() => handleOpenDialog(conglomerado, conglomerado.estado === 'Sin Asignar' ? 'assign' : 'edit')}
                     >
                       {conglomerado.estado === 'Sin Asignar' ? 'Asignar' : 'Editar'}
                     </Button>
