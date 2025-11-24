@@ -59,11 +59,7 @@ const SaveIcon = () => (
   </svg>
 );
 
-const CalculateIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9.5 8.5H12v-1h1V12h-1v-1H9.5v1h-1V7.5h1v1zm4.5 7h-5v-1h5v1zm0-2.5h-5v-1h5v1zM18 16h-2v2h-1v-2h-2v-1h2v-2h1v2h2v1z"/>
-  </svg>
-);
+// CalculateIcon removed — fecha fin se gestionará manualmente
 
 const GestionarConglomerados: React.FC = () => {
   const [conglomerados, setConglomerados] = useState<Conglomerado[]>([]);
@@ -224,6 +220,21 @@ const GestionarConglomerados: React.FC = () => {
       return;
     }
 
+    if (!fin || !fin.trim()) {
+      alert('Ingrese una Fecha Fin Aprox válida');
+      return;
+    }
+
+    // Validar que la fecha fin sea al menos 1 día después de la fecha inicio
+    const dInicio = new Date(inicio);
+    const dFin = new Date(fin);
+    const diffMs = dFin.getTime() - dInicio.getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime()) || diffMs < oneDayMs) {
+      alert('La Fecha Fin Aprox debe ser al menos un día después de la Fecha Inicio');
+      return;
+    }
+
     // Actualizar conglomerado con las fechas
     setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({ ...c, fechaInicio: inicio, fechaFinAprox: fin || '' }) : c));
 
@@ -253,12 +264,7 @@ const GestionarConglomerados: React.FC = () => {
     return new Date(fecha).toLocaleDateString('es-CO');
   };
 
-  // Calcular fecha fin aproximada (30 días después de la fecha inicio)
-  const calcularFechaFin = (fechaInicio: string) => {
-    const fecha = new Date(fechaInicio);
-    fecha.setDate(fecha.getDate() + 30);
-    return fecha.toISOString().split('T')[0];
-  };
+  // Eliminada la función de cálculo automático de fecha fin — manejo manual por usuario
 
   // Manejar cambio en los campos editables
   const handleEditChange = (field: string, value: any) => {
@@ -266,14 +272,6 @@ const GestionarConglomerados: React.FC = () => {
       ...prev,
       [field]: value
     }));
-
-    // Si cambia la fecha inicio y NO está investigado, recalcular fecha fin
-    if (field === 'fechaInicio' ) {
-      setEditData(prev => ({
-        ...prev,
-        fechaFinAprox: calcularFechaFin(value)
-      }));
-    }
   };
 
   // Guardar cambios
@@ -557,19 +555,16 @@ const GestionarConglomerados: React.FC = () => {
                         onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                       />
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<CalculateIcon />}
-                        onClick={() => {
-                          if (editData.fechaInicio) {
-                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                          }
-                        }}
-                        title="Calcular fecha fin (30 días después)"
-                      >
-                        Calcular
-                      </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              // En modo edición dejamos que el usuario guarde manualmente
+                              // No se calcula automáticamente la fecha fin.
+                            }}
+                          >
+                            Siguiente
+                          </Button>
                     </Box>
                   </Box>
                 )}
@@ -598,19 +593,13 @@ const GestionarConglomerados: React.FC = () => {
                         onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                       />
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<CalculateIcon />}
-                        onClick={() => {
-                          if (editData.fechaInicio) {
-                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                          }
-                        }}
-                        title="Calcular fecha fin (30 días después)"
-                      >
-                        Calcular
-                      </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleSaveDates}
+                          >
+                            Siguiente
+                          </Button>
                     </Box>
                   </Box>
                 )}
@@ -756,7 +745,19 @@ const GestionarConglomerados: React.FC = () => {
                   color="primary"
                   startIcon={<SaveIcon />}
                   onClick={handleSaveDates}
-                  disabled={!editData.fechaInicio || !String(editData.fechaInicio).trim()}
+                  disabled={
+                    !editData.fechaInicio || !String(editData.fechaInicio).trim() ||
+                    !editData.fechaFinAprox || !String(editData.fechaFinAprox).trim() ||
+                    (() => {
+                      const inicio = String(editData.fechaInicio || '');
+                      const fin = String(editData.fechaFinAprox || '');
+                      if (!inicio || !fin) return true;
+                      const dInicio = new Date(inicio);
+                      const dFin = new Date(fin);
+                      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return true;
+                      return (dFin.getTime() - dInicio.getTime()) < (24 * 60 * 60 * 1000);
+                    })()
+                  }
                 >
                   Guardar Fechas
                 </Button>
