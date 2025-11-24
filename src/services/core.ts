@@ -7,9 +7,11 @@ export async function guardarConglomerado(
   const url = `${baseUrl.replace(/\/$/, '')}/conglomerados/municipio/${encodeURIComponent(conglomerado.municipio)}/departamento/${encodeURIComponent(conglomerado.departamento)}`;
 
   const body = {
-    lat: conglomerado.lat,
-    lon: conglomerado.lon,
-    region: conglomerado.region
+    fechaInicio: null,
+    fechaFinAprox: null,
+    fechaFin: null,
+    latitud: conglomerado.lat,
+    longitud: conglomerado.lon
   };
 
   const respuesta = await fetch(url, {
