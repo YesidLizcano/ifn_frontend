@@ -28,7 +28,7 @@ interface Conglomerado {
   region: string;
   fechaInicio: string;
   fechaFinAprox: string;
-  estado: 'asignado' | 'pendiente' | 'completado' | 'cancelado';
+  estado: 'asignado' | 'pendiente' | 'completado' | 'cancelado' | 'Sin Asignar';
   observaciones?: string;
 }
 
@@ -370,7 +370,7 @@ const GestionarConglomerados: React.FC = () => {
                       startIcon={<EditIcon />}
                       onClick={() => handleOpenDialog(conglomerado, 'edit')}
                     >
-                      Editar
+                      {conglomerado.estado === 'Sin Asignar' ? 'Asignar' : 'Editar'}
                     </Button>
                     <Button
                       variant="outlined"
