@@ -114,7 +114,7 @@ const GestionarConglomerados: React.FC = () => {
   );
 
   // Manejar diálogos
-  const handleOpenDialog = (conglomerado: Conglomerado, type: 'view' | 'edit' | 'delete' | 'assign') => {
+  const handleOpenDialog = (conglomerado: Conglomerado, type: 'view' | 'edit' | 'delete' | 'assign' | 'assignDates') => {
     setSelectedConglomerado(conglomerado);
     setDialogType(type);
     if (type === 'assign') {
@@ -493,86 +493,81 @@ const GestionarConglomerados: React.FC = () => {
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                       Región: {selectedConglomerado.region}
                     </Typography>
-                    
-                    {dialogType === 'edit' && (
-                      <>
-                        <TextField
-                          fullWidth
-                          label="Fecha Inicio"
-                          type="date"
-                          value={editData.fechaInicio || ''}
-                          onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          sx={{ mb: 2 }}
-                        />
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                          <TextField
-                            fullWidth
-                            label="Fecha Fin Aprox"
-                            type="date"
-                            value={editData.fechaFinAprox || ''}
-                            onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                          />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<CalculateIcon />}
-                            onClick={() => {
-                              if (editData.fechaInicio) {
-                                handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                              }
-                            }}
-                            title="Calcular fecha fin (30 días después)"
-                          >
-                            Calcular
-                          </Button>
-                        </Box>
-                      </>
-                    )}
+                    <TextField
+                      fullWidth
+                      label="Fecha Inicio"
+                      type="date"
+                      value={editData.fechaInicio || ''}
+                      onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ mb: 2 }}
+                    />
 
-                    {/* Diálogo para asignar fechas antes de la asignación de brigada */}
-                    {dialogType === 'assignDates' && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          Asigne las fechas para el conglomerado antes de continuar con la asignación de la brigada.
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          label="Fecha Inicio"
-                          type="date"
-                          value={editData.fechaInicio || ''}
-                          onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          sx={{ mb: 2 }}
-                        />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Fecha Fin Aprox"
+                        type="date"
+                        value={editData.fechaFinAprox || ''}
+                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<CalculateIcon />}
+                        onClick={() => {
+                          if (editData.fechaInicio) {
+                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
+                          }
+                        }}
+                        title="Calcular fecha fin (30 días después)"
+                      >
+                        Calcular
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                          <TextField
-                            fullWidth
-                            label="Fecha Fin Aprox"
-                            type="date"
-                            value={editData.fechaFinAprox || ''}
-                            onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                          />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<CalculateIcon />}
-                            onClick={() => {
-                              if (editData.fechaInicio) {
-                                handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                              }
-                            }}
-                            title="Calcular fecha fin (30 días después)"
-                          >
-                            Calcular
-                          </Button>
-                        </Box>
-                      </Box>
-                    )}
+                {dialogType === 'assignDates' && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      Asigne las fechas para el conglomerado antes de continuar con la asignación de la brigada.
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      label="Fecha Inicio"
+                      type="date"
+                      value={editData.fechaInicio || ''}
+                      onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ mb: 2 }}
+                    />
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Fecha Fin Aprox"
+                        type="date"
+                        value={editData.fechaFinAprox || ''}
+                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<CalculateIcon />}
+                        onClick={() => {
+                          if (editData.fechaInicio) {
+                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
+                          }
+                        }}
+                        title="Calcular fecha fin (30 días después)"
+                      >
+                        Calcular
+                      </Button>
+                    </Box>
                   </Box>
                 )}
                 {dialogType === 'assign' && (
