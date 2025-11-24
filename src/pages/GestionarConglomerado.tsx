@@ -69,7 +69,7 @@ const GestionarConglomerados: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConglomerado, setSelectedConglomerado] = useState<Conglomerado | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign'>('view');
+  const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign' | 'assignDates'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
   const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: string; auxiliarTecnicos: string[]; botanicos: string[]; coinvestigadores: string[] }>({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
 
@@ -167,6 +167,24 @@ const GestionarConglomerados: React.FC = () => {
     }) : c));
 
     handleCloseDialog();
+  };
+
+  // Guardar fechas antes de abrir el diálogo de asignación
+  const handleSaveDates = () => {
+    if (!selectedConglomerado) return;
+    const inicio = editData.fechaInicio as string | undefined;
+    const fin = editData.fechaFinAprox as string | undefined;
+
+    if (!inicio || !inicio.trim()) {
+      alert('Ingrese una Fecha Inicio válida');
+      return;
+    }
+
+    // Actualizar conglomerado con las fechas
+    setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({ ...c, fechaInicio: inicio, fechaFinAprox: fin || '' }) : c));
+
+    // Cambiar al diálogo de asignación (sin cerrar)
+    setDialogType('assign');
   };
 
   const handleCloseDialog = () => {
@@ -414,7 +432,7 @@ const GestionarConglomerados: React.FC = () => {
                       color="primary"
                       size="small"
                       startIcon={<EditIcon />}
-                      onClick={() => handleOpenDialog(conglomerado, conglomerado.estado === 'Sin Asignar' ? 'assign' : 'edit')}
+                      onClick={() => handleOpenDialog(conglomerado, conglomerado.estado === 'Sin Asignar' ? 'assignDates' : 'edit')}
                     >
                       {conglomerado.estado === 'Sin Asignar' ? 'Asignar' : 'Editar'}
                     </Button>
@@ -476,39 +494,85 @@ const GestionarConglomerados: React.FC = () => {
                       Región: {selectedConglomerado.region}
                     </Typography>
                     
-                    <TextField
-                      fullWidth
-                      label="Fecha Inicio"
-                      type="date"
-                      value={editData.fechaInicio || ''}
-                      onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ mb: 2 }}
-                    />
+                    {dialogType === 'edit' && (
+                      <>
+                        <TextField
+                          fullWidth
+                          label="Fecha Inicio"
+                          type="date"
+                          value={editData.fechaInicio || ''}
+                          onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={{ mb: 2 }}
+                        />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <TextField
-                        fullWidth
-                        label="Fecha Fin Aprox"
-                        type="date"
-                        value={editData.fechaFinAprox || ''}
-                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<CalculateIcon />}
-                        onClick={() => {
-                          if (editData.fechaInicio) {
-                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                          }
-                        }}
-                        title="Calcular fecha fin (30 días después)"
-                      >
-                        Calcular
-                      </Button>
-                    </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                          <TextField
+                            fullWidth
+                            label="Fecha Fin Aprox"
+                            type="date"
+                            value={editData.fechaFinAprox || ''}
+                            onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<CalculateIcon />}
+                            onClick={() => {
+                              if (editData.fechaInicio) {
+                                handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
+                              }
+                            }}
+                            title="Calcular fecha fin (30 días después)"
+                          >
+                            Calcular
+                          </Button>
+                        </Box>
+                      </>
+                    )}
+
+                    {/* Diálogo para asignar fechas antes de la asignación de brigada */}
+                    {dialogType === 'assignDates' && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="body2" color="textSecondary" gutterBottom>
+                          Asigne las fechas para el conglomerado antes de continuar con la asignación de la brigada.
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          label="Fecha Inicio"
+                          type="date"
+                          value={editData.fechaInicio || ''}
+                          onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={{ mb: 2 }}
+                        />
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                          <TextField
+                            fullWidth
+                            label="Fecha Fin Aprox"
+                            type="date"
+                            value={editData.fechaFinAprox || ''}
+                            onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<CalculateIcon />}
+                            onClick={() => {
+                              if (editData.fechaInicio) {
+                                handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
+                              }
+                            }}
+                            title="Calcular fecha fin (30 días después)"
+                          >
+                            Calcular
+                          </Button>
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
                 )}
                 {dialogType === 'assign' && (
@@ -589,6 +653,17 @@ const GestionarConglomerados: React.FC = () => {
                   onClick={handleSave}
                 >
                   Guardar
+                </Button>
+              )}
+              {dialogType === 'assignDates' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSaveDates}
+                  disabled={!editData.fechaInicio || !String(editData.fechaInicio).trim()}
+                >
+                  Guardar Fechas
                 </Button>
               )}
               {dialogType === 'assign' && (
