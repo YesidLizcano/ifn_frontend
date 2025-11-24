@@ -123,9 +123,19 @@ export async function listarConglomerados(token: string): Promise<RawConglomerad
 // Integrantes - listar por región y rol
 export interface Integrante {
   id: number;
-  nombre: string;
-  rol: string;
-  // otros campos que el backend pueda devolver se pueden añadir aquí
+  // El backend devuelve campos como en el ejemplo:
+  // { id, nombreCompleto, jefeBrigada, botanico, auxiliar, coinvestigador, telefono, email, municipio_id, estado }
+  nombre?: string; // antiguo campo opcional
+  nombreCompleto?: string;
+  rol?: string;
+  jefeBrigada?: boolean;
+  botanico?: boolean;
+  auxiliar?: boolean;
+  coinvestigador?: boolean;
+  telefono?: string;
+  email?: string;
+  municipio_id?: number;
+  estado?: string;
   [key: string]: any;
 }
 

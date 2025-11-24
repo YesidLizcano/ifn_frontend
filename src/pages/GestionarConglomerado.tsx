@@ -149,12 +149,16 @@ const GestionarConglomerados: React.FC = () => {
         const fin = selectedConglomerado.fechaFinAprox || '';
 
         // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
+        // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
         const rolesToFetch = ['auxiliar', 'botanico', 'jefeBrigada', 'coinvestigador'];
         const results: Record<string, Integrante[]> = {};
         for (const rol of rolesToFetch) {
           try {
             const res = await listarIntegrantesPorRegion(departamentoNombre, inicio, fin, rol, token);
-            results[rol] = res || [];
+            // El backend puede devolver una lista con flags booleanas por rol.
+            // Filtramos por la propiedad booleana correspondiente (p.e. item['auxiliar']).
+            const lista: any[] = (res || []).filter((it: any) => Boolean(it && it[rol]));
+            results[rol] = lista;
           } catch (err) {
             console.warn(`Error cargando integrantes para rol ${rol}:`, err);
             results[rol] = [];
@@ -620,7 +624,7 @@ const GestionarConglomerados: React.FC = () => {
                           <MenuItem value="">Cargando...</MenuItem>
                         ) : (
                           integrantesByRole['jefeBrigada'].map(i => (
-                            <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                            <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
                           ))
                         )}
                       </TextField>
@@ -650,7 +654,7 @@ const GestionarConglomerados: React.FC = () => {
                                 <MenuItem value="">Cargando...</MenuItem>
                               ) : (
                                 integrantesByRole['auxiliar'].map(i => (
-                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                                  <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
                                 ))
                               )}
                             </TextField>
@@ -683,9 +687,9 @@ const GestionarConglomerados: React.FC = () => {
                               {loadingIntegrantes ? (
                                 <MenuItem value="">Cargando...</MenuItem>
                               ) : (
-                                integrantesByRole['botanico'].map(i => (
-                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
-                                ))
+                                 integrantesByRole['botanico'].map(i => (
+                                   <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
+                                 ))
                               )}
                             </TextField>
                           ) : (
@@ -718,7 +722,7 @@ const GestionarConglomerados: React.FC = () => {
                                 <MenuItem value="">Cargando...</MenuItem>
                               ) : (
                                 integrantesByRole['coinvestigador'].map(i => (
-                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                                  <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
                                 ))
                               )}
                             </TextField>
