@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MapaColombia from './MapaColombia';
+import { guardarConglomerado } from '../../services/core';
 import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
 import { verificarCoordenadasEnColombia } from '../../services/core';
 
@@ -156,8 +157,14 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                               color="success"
                               size="small"
                               sx={{ mr: 1 }}
-                              onClick={() => {
-                                alert(`Conglomerado ${c.municipio} guardado en BD`);
+                              onClick={async () => {
+                                const token = localStorage.getItem('access_token') || '';
+                                try {
+                                  await guardarConglomerado(c, token);
+                                  alert(`Conglomerado ${c.municipio} guardado en BD`);
+                                } catch (error) {
+                                  alert('Error al guardar conglomerado: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+                                }
                               }}
                             >
                               Guardar
