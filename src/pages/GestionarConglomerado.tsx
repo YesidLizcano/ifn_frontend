@@ -15,8 +15,6 @@ import {
   DialogActions,
   Alert,
   CircularProgress,
-  Switch,
-  FormControlLabel,
   Paper
 } from '@mui/material';
 
@@ -28,13 +26,9 @@ interface Conglomerado {
   departamento: string;
   municipio: string;
   region: string;
-  tipo: string;
   fechaInicio: string;
   fechaFinAprox: string;
-  investigado: boolean;
   estado: 'asignado' | 'pendiente' | 'completado' | 'cancelado';
-  fechaCreacion: string;
-  brigada?: string;
   observaciones?: string;
 }
 
@@ -94,13 +88,9 @@ const GestionarConglomerados: React.FC = () => {
           departamento: d.departamento_nombre,
           municipio: d.municipio_nombre,
           region: d.region,
-          // eliminamos tipo, investigado, brigada, fechaCreacion
-          tipo: '',
           fechaInicio: d.fechaInicio || '',
           fechaFinAprox: d.fechaFinAprox || '',
-          investigado: false,
           estado: (d.estado as any) || 'Sin Asignar',
-          fechaCreacion: '',
         }));
 
         setConglomerados(mapped);
@@ -128,8 +118,7 @@ const GestionarConglomerados: React.FC = () => {
     setDialogType(type);
     setEditData({
       fechaInicio: conglomerado.fechaInicio,
-      fechaFinAprox: conglomerado.fechaFinAprox,
-      investigado: conglomerado.investigado
+      fechaFinAprox: conglomerado.fechaFinAprox
     });
     setDialogOpen(true);
   };
@@ -171,7 +160,7 @@ const GestionarConglomerados: React.FC = () => {
     }));
 
     // Si cambia la fecha inicio y NO está investigado, recalcular fecha fin
-    if (field === 'fechaInicio' && !editData.investigado) {
+    if (field === 'fechaInicio' ) {
       setEditData(prev => ({
         ...prev,
         fechaFinAprox: calcularFechaFin(value)
@@ -292,16 +281,6 @@ const GestionarConglomerados: React.FC = () => {
                   variant="outlined" 
                   color="primary" 
                 />
-                <Chip 
-                  label={`Investigados: ${conglomerados.filter(c => c.investigado).length}`} 
-                  variant="outlined" 
-                  color="success" 
-                />
-                <Chip 
-                  label={`Por investigar: ${conglomerados.filter(c => !c.investigado).length}`} 
-                  variant="outlined" 
-                  color="warning" 
-                />
               </Box>
             </Box>
           </Box>
@@ -327,9 +306,9 @@ const GestionarConglomerados: React.FC = () => {
                   sx={{ 
                     p: 2, 
                     height: '100%',
-                    border: conglomerado.investigado ? '2px solid #4CAF50' : '2px solid #FF9800',
+                    border: '1px solid rgba(0,0,0,0.08)',
                     borderRadius: 2,
-                    backgroundColor: conglomerado.investigado ? 'rgba(248,255,248,0.95)' : 'rgba(255,248,240,0.95)',
+                    backgroundColor: '#fff',
                     display: 'flex',
                     flexDirection: 'column',
                     backdropFilter: 'blur(5px)'
@@ -358,9 +337,7 @@ const GestionarConglomerados: React.FC = () => {
                     <Typography variant="body2" gutterBottom>
                       <strong>Región:</strong> {conglomerado.region}
                     </Typography>
-                    <Typography variant="body2" gutterBottom>
-                      <strong>Tipo:</strong> {conglomerado.tipo}
-                    </Typography>
+                    {/* Tipo eliminado del modelo */}
                     <Typography variant="body2" gutterBottom>
                       <strong>Coordenadas:</strong> {conglomerado.latitud.toFixed(4)}, {conglomerado.longitud.toFixed(4)}
                     </Typography>
@@ -382,26 +359,7 @@ const GestionarConglomerados: React.FC = () => {
                     </Typography>
                   </Box>
 
-                  {/* Estado de investigación */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      <strong>Investigado:</strong>
-                    </Typography>
-                    <Chip 
-                      label={conglomerado.investigado ? "SÍ" : "NO"} 
-                      color={conglomerado.investigado ? "success" : "warning"}
-                      size="small"
-                    />
-                  </Box>
-
-                  {/* Brigada asignada */}
-                  {conglomerado.brigada && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2">
-                        <strong>Brigada:</strong> {conglomerado.brigada}
-                      </Typography>
-                    </Box>
-                  )}
+                  {/* Campos eliminados: investigado, brigada, tipo, fechaCreacion */}
 
                   {/* Botones de acción */}
                   <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 'auto' }}>
@@ -471,18 +429,6 @@ const GestionarConglomerados: React.FC = () => {
                       Región: {selectedConglomerado.region}
                     </Typography>
                     
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={editData.investigado || false}
-                          onChange={(e) => handleEditChange('investigado', e.target.checked)}
-                          color="primary"
-                        />
-                      }
-                      label="¿Está investigado?"
-                      sx={{ mt: 2, mb: 2 }}
-                    />
-
                     <TextField
                       fullWidth
                       label="Fecha Inicio"
@@ -493,37 +439,29 @@ const GestionarConglomerados: React.FC = () => {
                       sx={{ mb: 2 }}
                     />
 
-                    {!editData.investigado && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <TextField
-                          fullWidth
-                          label="Fecha Fin Aprox"
-                          type="date"
-                          value={editData.fechaFinAprox || ''}
-                          onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                        />
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<CalculateIcon />}
-                          onClick={() => {
-                            if (editData.fechaInicio) {
-                              handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
-                            }
-                          }}
-                          title="Calcular fecha fin (30 días después)"
-                        >
-                          Calcular
-                        </Button>
-                      </Box>
-                    )}
-
-                    {editData.investigado && (
-                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                        <strong>Fecha Fin Aprox:</strong> {formatFecha(editData.fechaFinAprox || '')}
-                      </Typography>
-                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Fecha Fin Aprox"
+                        type="date"
+                        value={editData.fechaFinAprox || ''}
+                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<CalculateIcon />}
+                        onClick={() => {
+                          if (editData.fechaInicio) {
+                            handleEditChange('fechaFinAprox', calcularFechaFin(editData.fechaInicio));
+                          }
+                        }}
+                        title="Calcular fecha fin (30 días después)"
+                      >
+                        Calcular
+                      </Button>
+                    </Box>
                   </Box>
                 )}
                 
