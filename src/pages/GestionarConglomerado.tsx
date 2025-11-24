@@ -69,8 +69,9 @@ const GestionarConglomerados: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConglomerado, setSelectedConglomerado] = useState<Conglomerado | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete'>('view');
+  const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
+  const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: string; auxiliarTecnicos: string[]; botanicos: string[]; coinvestigadores: string[] }>({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
 
   // Cargar conglomerados desde backend
   useEffect(() => {
@@ -113,14 +114,59 @@ const GestionarConglomerados: React.FC = () => {
   );
 
   // Manejar diálogos
-  const handleOpenDialog = (conglomerado: Conglomerado, type: 'view' | 'edit' | 'delete') => {
+  const handleOpenDialog = (conglomerado: Conglomerado, type: 'view' | 'edit' | 'delete' | 'assign') => {
     setSelectedConglomerado(conglomerado);
     setDialogType(type);
-    setEditData({
-      fechaInicio: conglomerado.fechaInicio,
-      fechaFinAprox: conglomerado.fechaFinAprox
-    });
+    if (type === 'assign') {
+      // Inicializar datos de brigada al asignar (ahora con arrays)
+      setBrigadaData({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
+    } else {
+      setEditData({
+        fechaInicio: conglomerado.fechaInicio,
+        fechaFinAprox: conglomerado.fechaFinAprox
+      });
+    }
     setDialogOpen(true);
+  };
+
+  // Helpers para manejar arrays dinámicos en brigadaData
+  const addArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores') => {
+    setBrigadaData(prev => ({ ...(prev as any), [field]: [...(prev as any)[field], ''] }));
+  };
+
+  const removeArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number) => {
+    setBrigadaData(prev => {
+      const arr = [...(prev as any)[field]];
+      if (arr.length <= 1) return prev; // mantener al menos 1 campo vacío
+      arr.splice(index, 1);
+      return { ...(prev as any), [field]: arr };
+    });
+  };
+
+  const updateArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number, value: string) => {
+    setBrigadaData(prev => {
+      const arr = [...(prev as any)[field]];
+      arr[index] = value;
+      return { ...(prev as any), [field]: arr };
+    });
+  };
+
+  const handleAssign = () => {
+    if (!selectedConglomerado) return;
+    // Validación mínima
+    if (!brigadaData.jefeBrigada.trim()) {
+      alert('Ingrese el nombre del jefe de brigada');
+      return;
+    }
+
+    // Actualizar estado y dejar un resumen en observaciones (simulación local)
+    setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({
+      ...c,
+      estado: 'asignado',
+      observaciones: `Jefe: ${brigadaData.jefeBrigada}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).join(', ') || 'N/A'}`
+    }) : c));
+
+    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
@@ -413,6 +459,7 @@ const GestionarConglomerados: React.FC = () => {
           <DialogTitle>
             {dialogType === 'edit' && `Editar Conglomerado ${selectedConglomerado?.id}`}
             {dialogType === 'delete' && 'Eliminar Conglomerado'}
+            {dialogType === 'assign' && `Asignar Brigada a ${selectedConglomerado?.id}`}
           </DialogTitle>
           <DialogContent>
             {selectedConglomerado && (
@@ -464,6 +511,65 @@ const GestionarConglomerados: React.FC = () => {
                     </Box>
                   </Box>
                 )}
+                {dialogType === 'assign' && (
+                  <Box sx={{ mt: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Jefe de Brigada"
+                      value={brigadaData.jefeBrigada}
+                      onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
+                      sx={{ mb: 2 }}
+                    />
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>Auxiliares Técnicos</Typography>
+                      {brigadaData.auxiliarTecnicos.map((a, idx) => (
+                        <Box key={`aux-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          <TextField
+                            fullWidth
+                            value={a}
+                            onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
+                            placeholder={`Auxiliar ${idx + 1}`}
+                          />
+                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('auxiliarTecnicos', idx)}>-</Button>
+                        </Box>
+                      ))}
+                      <Button size="small" onClick={() => addArrayItem('auxiliarTecnicos')}>Agregar Auxiliar</Button>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>Botánicos</Typography>
+                      {brigadaData.botanicos.map((b, idx) => (
+                        <Box key={`bot-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          <TextField
+                            fullWidth
+                            value={b}
+                            onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
+                            placeholder={`Botánico ${idx + 1}`}
+                          />
+                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('botanicos', idx)}>-</Button>
+                        </Box>
+                      ))}
+                      <Button size="small" onClick={() => addArrayItem('botanicos')}>Agregar Botánico</Button>
+                    </Box>
+
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>Coinvestigadores</Typography>
+                      {brigadaData.coinvestigadores.map((c, idx) => (
+                        <Box key={`ci-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          <TextField
+                            fullWidth
+                            value={c}
+                            onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
+                            placeholder={`Coinvestigador ${idx + 1}`}
+                          />
+                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('coinvestigadores', idx)}>-</Button>
+                        </Box>
+                      ))}
+                      <Button size="small" onClick={() => addArrayItem('coinvestigadores')}>Agregar Coinvestigador</Button>
+                    </Box>
+                  </Box>
+                )}
                 
                 {dialogType === 'delete' && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
@@ -473,29 +579,40 @@ const GestionarConglomerados: React.FC = () => {
               </>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancelar</Button>
-            {dialogType === 'edit' && (
-              <Button 
-                variant="contained" 
-                color="primary"
-                startIcon={<SaveIcon />}
-                onClick={handleSave}
-              >
-                Guardar
-              </Button>
-            )}
-            {dialogType === 'delete' && (
-              <Button 
-                variant="contained" 
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={handleDelete}
-              >
-                Eliminar
-              </Button>
-            )}
-          </DialogActions>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancelar</Button>
+              {dialogType === 'edit' && (
+                <Button 
+                  variant="contained" 
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSave}
+                >
+                  Guardar
+                </Button>
+              )}
+              {dialogType === 'assign' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleAssign}
+                  disabled={!brigadaData.jefeBrigada.trim() || brigadaData.auxiliarTecnicos.filter(a => a.trim()).length < 1 || brigadaData.botanicos.filter(b => b.trim()).length < 1}
+                >
+                  Asignar Brigada
+                </Button>
+              )}
+              {dialogType === 'delete' && (
+                <Button 
+                  variant="contained" 
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleDelete}
+                >
+                  Eliminar
+                </Button>
+              )}
+            </DialogActions>
         </Dialog>
       </Container>
     </Box>
