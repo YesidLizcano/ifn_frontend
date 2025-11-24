@@ -148,7 +148,8 @@ const GestionarConglomerados: React.FC = () => {
         const inicio = selectedConglomerado.fechaInicio || '';
         const fin = selectedConglomerado.fechaFinAprox || '';
 
-        const rolesToFetch = ['auxiliar_tecnico', 'botanico', 'jefe_brigada'];
+        // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
+        const rolesToFetch = ['auxiliar', 'botanico', 'jefeBrigada', 'coinvestigador'];
         const results: Record<string, Integrante[]> = {};
         for (const rol of rolesToFetch) {
           try {
@@ -606,7 +607,7 @@ const GestionarConglomerados: React.FC = () => {
                 {dialogType === 'assign' && (
                   <Box sx={{ mt: 2 }}>
                     {/* Jefe de brigada: select si hay resultados, fallback a texto */}
-                    {integrantesByRole['jefe_brigada'] && integrantesByRole['jefe_brigada'].length > 0 ? (
+                    {integrantesByRole['jefeBrigada'] && integrantesByRole['jefeBrigada'].length > 0 ? (
                       <TextField
                         select
                         fullWidth
@@ -618,7 +619,7 @@ const GestionarConglomerados: React.FC = () => {
                         {loadingIntegrantes ? (
                           <MenuItem value="">Cargando...</MenuItem>
                         ) : (
-                          integrantesByRole['jefe_brigada'].map(i => (
+                          integrantesByRole['jefeBrigada'].map(i => (
                             <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
                           ))
                         )}
@@ -637,7 +638,7 @@ const GestionarConglomerados: React.FC = () => {
                       <Typography variant="body2" sx={{ mb: 1 }}>Auxiliares Técnicos</Typography>
                       {brigadaData.auxiliarTecnicos.map((a, idx) => (
                         <Box key={`aux-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          {integrantesByRole['auxiliar_tecnico'] && integrantesByRole['auxiliar_tecnico'].length > 0 ? (
+                          {integrantesByRole['auxiliar'] && integrantesByRole['auxiliar'].length > 0 ? (
                             <TextField
                               select
                               fullWidth
@@ -648,7 +649,7 @@ const GestionarConglomerados: React.FC = () => {
                               {loadingIntegrantes ? (
                                 <MenuItem value="">Cargando...</MenuItem>
                               ) : (
-                                integrantesByRole['auxiliar_tecnico'].map(i => (
+                                integrantesByRole['auxiliar'].map(i => (
                                   <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
                                 ))
                               )}
@@ -705,12 +706,30 @@ const GestionarConglomerados: React.FC = () => {
                       <Typography variant="body2" sx={{ mb: 1 }}>Coinvestigadores</Typography>
                       {brigadaData.coinvestigadores.map((c, idx) => (
                         <Box key={`ci-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          <TextField
-                            fullWidth
-                            value={c}
-                            onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
-                            placeholder={`Coinvestigador ${idx + 1}`}
-                          />
+                          {integrantesByRole['coinvestigador'] && integrantesByRole['coinvestigador'].length > 0 ? (
+                            <TextField
+                              select
+                              fullWidth
+                              value={c}
+                              onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
+                              placeholder={`Coinvestigador ${idx + 1}`}
+                            >
+                              {loadingIntegrantes ? (
+                                <MenuItem value="">Cargando...</MenuItem>
+                              ) : (
+                                integrantesByRole['coinvestigador'].map(i => (
+                                  <MenuItem key={i.id} value={i.nombre}>{i.nombre}</MenuItem>
+                                ))
+                              )}
+                            </TextField>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              value={c}
+                              onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
+                              placeholder={`Coinvestigador ${idx + 1}`}
+                            />
+                          )}
                           <Button size="small" variant="outlined" onClick={() => removeArrayItem('coinvestigadores', idx)}>-</Button>
                         </Box>
                       ))}
