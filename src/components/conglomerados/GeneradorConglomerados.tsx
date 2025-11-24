@@ -162,6 +162,7 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                                 try {
                                   await guardarConglomerado(c, token);
                                   alert(`Conglomerado ${c.municipio} guardado en BD`);
+                                  setConglomerados(prev => prev.filter((_, i) => i !== index));
                                 } catch (error) {
                                   alert('Error al guardar conglomerado: ' + (error instanceof Error ? error.message : 'Error desconocido'));
                                 }
