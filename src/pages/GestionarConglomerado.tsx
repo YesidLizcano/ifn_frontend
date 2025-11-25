@@ -533,7 +533,7 @@ const GestionarConglomerados: React.FC = () => {
                   {/* Header de la tarjeta */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
-                      ID: CONG-{conglomerado.municipio}
+                      CONG-{conglomerado.municipio}
                     </Typography>
                     <Chip 
                       label={conglomerado.estado} 
