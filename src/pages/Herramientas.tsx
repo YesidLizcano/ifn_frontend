@@ -184,17 +184,8 @@ const GestionarHerramientas: React.FC = () => {
     }));
   };
 
-  // Calcular el nuevo total propuesto en edición.
-  // Comportamiento: si el usuario ingresa un número negativo, se interpreta como delta (resta).
-  // Si ingresa un número positivo, se interpreta como el nuevo total absoluto.
-  const computedNewTotal = (() => {
-    if (!selectedHerramienta) return NaN;
-    const v = editData.cantidadTotal;
-    if (v === undefined || v === null || Number.isNaN(Number(v))) return NaN;
-    const n = Number(v);
-    if (n < 0) return selectedHerramienta.cantidadTotal + n; // delta negativo
-    return n; // nuevo total absoluto
-  })();
+  // Nota: la lógica de aplicación de deltas (valores negativos) se delega al backend.
+  // Aquí solo almacenamos lo que el usuario escribe en `editData.cantidadTotal` y lo enviamos tal cual.
 
   // Guardar nueva herramienta
   const handleGuardarNuevaHerramienta = async () => {
@@ -260,30 +251,23 @@ const GestionarHerramientas: React.FC = () => {
           return;
         }
 
-        // Calcular el nuevo total real usando computedNewTotal (si es NaN, fallback al valor actual)
-        const newTotal = Number.isNaN(computedNewTotal) ? (editData.cantidadTotal ?? selectedHerramienta.cantidadTotal) : computedNewTotal;
-
-        if (newTotal < (selectedHerramienta.ocupadas || 0)) {
-          alert('No se puede reducir la cantidad por debajo de las unidades ocupadas');
-          return;
-        }
-
-        if (newTotal < 0) {
-          alert('La cantidad total no puede ser negativa');
-          return;
-        }
+        // Enviar la cantidad tal cual el usuario la ingresó (puede ser negativa para indicar delta).
+        const payloadCantidad = editData.cantidadTotal !== undefined && editData.cantidadTotal !== null
+          ? Number(editData.cantidadTotal)
+          : selectedHerramienta.cantidadTotal;
 
         await actualizarHerramienta(
           parseInt(selectedHerramienta.id),
           editData.nombre || selectedHerramienta.nombre,
-          newTotal,
+          payloadCantidad,
           depId,
           token
         );
 
-        // Actualizar estado local
+        // Actualizar estado local con lo que devolvió el backend sería lo ideal; como no
+        // hacemos una nueva consulta aquí, actualizamos de forma conservadora usando el valor enviado.
         const nuevasOcupadas = selectedHerramienta.ocupadas;
-        const nuevosDisponibles = newTotal - nuevasOcupadas;
+        const nuevosDisponibles = (payloadCantidad) - nuevasOcupadas;
 
         setHerramientas(prev => 
           prev.map(herramienta => 
@@ -291,7 +275,7 @@ const GestionarHerramientas: React.FC = () => {
               ? { 
                   ...herramienta,
                   nombre: editData.nombre || '',
-                  cantidadTotal: newTotal,
+                  cantidadTotal: payloadCantidad,
                   disponibles: nuevosDisponibles >= 0 ? nuevosDisponibles : 0,
                   departamento: editData.departamento || '',
                   departamento_id: depId!
@@ -673,8 +657,7 @@ const GestionarHerramientas: React.FC = () => {
                   const nombreOk = !!editData.nombre?.trim();
                   const departamentoOk = !!editData.departamento?.trim();
                   const cantidadProvided = editData.cantidadTotal !== undefined && editData.cantidadTotal !== null && !Number.isNaN(Number(editData.cantidadTotal));
-                  const cantidadValida = !Number.isNaN(computedNewTotal) && (selectedHerramienta ? computedNewTotal >= selectedHerramienta.ocupadas : computedNewTotal >= 0) && computedNewTotal >= 0;
-                  return !(nombreOk && departamentoOk && cantidadProvided && cantidadValida);
+                  return !(nombreOk && departamentoOk && cantidadProvided);
                 })()}
               >
                 Guardar Cambios
