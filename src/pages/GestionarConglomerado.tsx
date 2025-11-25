@@ -247,8 +247,14 @@ const GestionarConglomerados: React.FC = () => {
       if (c?.id) integrantes_asignados.push({ integrante_id: c.id, rol_asignado: 'COINVESTIGADOR' });
     });
 
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const fechaHoy = `${year}-${month}-${day}`;
+
     const brigadaPayload: BrigadaCrear = {
-      fechaCreacion: new Date().toISOString().split('T')[0], // Hoy
+      fechaCreacion: fechaHoy, // Usar fecha local formateada
       estado: 'ACTIVA',
       fechaInicio: (editData.fechaInicio as string) || selectedConglomerado.fechaInicio,
       fechaFinAprox: (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox,
