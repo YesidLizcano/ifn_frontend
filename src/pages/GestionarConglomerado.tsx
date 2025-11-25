@@ -243,6 +243,10 @@ const GestionarConglomerados: React.FC = () => {
     // Actualizar conglomerado con las fechas
     setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({ ...c, fechaInicio: inicio, fechaFinAprox: fin || '' }) : c));
 
+    // También actualizar el objeto seleccionado para que los efectos que dependen
+    // de `selectedConglomerado` (por ejemplo, la carga de integrantes) reciban las fechas
+    setSelectedConglomerado(prev => prev ? ({ ...prev, fechaInicio: inicio || '', fechaFinAprox: fin || '' }) : prev);
+
     // Cambiar al diálogo de asignación (sin cerrar)
     setDialogType('assign');
   };
