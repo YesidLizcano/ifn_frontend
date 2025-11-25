@@ -220,3 +220,36 @@ export async function asignarBrigada(
 
   return await respuesta.json();
 }
+
+// Eliminar un conglomerado
+export async function eliminarConglomerado(
+  conglomeradoId: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/conglomerados/${conglomeradoId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al eliminar el conglomerado';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  // El DELETE puede no devolver cuerpo o devolver un mensaje de éxito
+  try {
+    return await respuesta.json();
+  } catch (e) {
+    return { success: true };
+  }
+}

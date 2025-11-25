@@ -5,8 +5,8 @@ import {
   Integrante,
   asignarBrigada,
   BrigadaCrear,
+  eliminarConglomerado, // Importar el nuevo servicio
 } from '../services/core';
-import { Autocomplete } from '@mui/material';
 import {
   Box,
   Card,
@@ -80,6 +80,13 @@ const GestionarConglomerados: React.FC = () => {
   const [integrantesByRole, setIntegrantesByRole] = useState<Record<string, Integrante[]>>({});
   const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
   const [loadingAssign, setLoadingAssign] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayString = `${year}-${month}-${day}`;
 
   // Cargar conglomerados desde backend
   useEffect(() => {
@@ -301,6 +308,16 @@ const GestionarConglomerados: React.FC = () => {
       return;
     }
 
+    // Validar que las fechas no sean anteriores a hoy
+    if (inicio < todayString) {
+      alert('La Fecha Inicio no puede ser anterior a la fecha de hoy.');
+      return;
+    }
+    if (fin < todayString) {
+      alert('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.');
+      return;
+    }
+
     // Validar que la fecha fin sea al menos 1 día después de la fecha inicio
     const dInicio = new Date(inicio);
     const dFin = new Date(fin);
@@ -321,6 +338,7 @@ const GestionarConglomerados: React.FC = () => {
     setSelectedConglomerado(null);
     setEditData({});
     setLoadingAssign(false); // Resetear estado de carga
+    setLoadingDelete(false); // Resetear estado de carga de eliminación
   };
 
   // Función para obtener el color del estado
@@ -393,6 +411,18 @@ const GestionarConglomerados: React.FC = () => {
   // Guardar cambios
   const handleSave = () => {
     if (selectedConglomerado) {
+      const inicio = editData.fechaInicio as string | undefined;
+      const fin = editData.fechaFinAprox as string | undefined;
+
+      if (inicio && inicio < todayString) {
+        alert('La Fecha Inicio no puede ser anterior a la fecha de hoy.');
+        return;
+      }
+      if (fin && fin < todayString) {
+        alert('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.');
+        return;
+      }
+
       setConglomerados(prev => 
         prev.map(cong => 
           cong.id === selectedConglomerado.id 
@@ -405,12 +435,24 @@ const GestionarConglomerados: React.FC = () => {
   };
 
   // Eliminar conglomerado
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedConglomerado) {
-      setConglomerados(prev => 
-        prev.filter(cong => cong.id !== selectedConglomerado.id)
-      );
-      handleCloseDialog();
+      setLoadingDelete(true);
+      try {
+        const token = localStorage.getItem('access_token') || '';
+        await eliminarConglomerado(Number(selectedConglomerado.id), token);
+        
+        setConglomerados(prev => 
+          prev.filter(cong => cong.id !== selectedConglomerado.id)
+        );
+        alert('Conglomerado eliminado con éxito.');
+        handleCloseDialog();
+      } catch (error) {
+        console.error('Error al eliminar el conglomerado:', error);
+        alert(`Error al eliminar el conglomerado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        setLoadingDelete(false); // Asegurarse de resetear el estado en caso de error
+      }
+      // El finally no es necesario si se resetea en ambos casos (éxito y error)
     }
   };
 
@@ -660,6 +702,7 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaInicio || ''}
                       onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: todayString }}
                       sx={{ my: 2 }}
                     />
 
@@ -670,6 +713,7 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaFinAprox || ''}
                       onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: todayString }}
                     />
                   </Box>
                 )}
@@ -686,6 +730,7 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaInicio || ''}
                       onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: todayString }}
                       sx={{ my: 2 }}
                     />
 
@@ -696,6 +741,7 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaFinAprox || ''}
                       onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: todayString }}
                     />
                   </Box>
                 )}
@@ -834,10 +880,11 @@ const GestionarConglomerados: React.FC = () => {
                 <Button 
                   variant="contained" 
                   color="error"
-                  startIcon={<DeleteIcon />}
+                  startIcon={loadingDelete ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
                   onClick={handleDelete}
+                  disabled={loadingDelete}
                 >
-                  Eliminar
+                  {loadingDelete ? 'Eliminando...' : 'Eliminar'}
                 </Button>
               )}
             </DialogActions>
