@@ -261,3 +261,43 @@ export async function eliminarConglomerado(
     return { success: true };
   }
 }
+
+// Listar todas las brigadas
+export interface RawBrigadaResponse {
+  id: number;
+  fechaCreacion: string;
+  estado: string;
+  fechaInicio: string;
+  fechaFinAprox: string;
+  integrantes: { integrante_id: number; rol_asignado: string; nombre_completo: string }[];
+  conglomerado_info?: { id: number; nombre: string; };
+}
+
+export async function listarBrigadas(token: string): Promise<RawBrigadaResponse[]> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/brigadas`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al listar las brigadas';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}
