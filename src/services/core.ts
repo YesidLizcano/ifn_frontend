@@ -386,6 +386,7 @@ export async function eliminarIntegranteBrigada(
 export async function agregarIntegranteBrigada(
   brigadaId: number,
   integranteId: number,
+  rol: string,
   token: string
 ): Promise<any> {
   const baseUrl = process.env.REACT_APP_API_CORE_URL;
@@ -395,8 +396,10 @@ export async function agregarIntegranteBrigada(
   const respuesta = await fetch(url, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
+    body: JSON.stringify({ rol }),
   });
 
   if (!respuesta.ok) {

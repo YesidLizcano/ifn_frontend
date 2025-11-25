@@ -285,11 +285,12 @@ const GestionarBrigadas: React.FC = () => {
     }
   };
 
-  const handleAddMember = async (integranteId: number) => {
+  const handleAddMember = async (member: Integrante) => {
     if (!selectedBrigadaIdForDialog) return;
+    const rol = getMemberRole(member);
     try {
       const token = localStorage.getItem('access_token') || '';
-      await agregarIntegranteBrigada(selectedBrigadaIdForDialog, integranteId, token);
+      await agregarIntegranteBrigada(selectedBrigadaIdForDialog, member.id, rol, token);
       
       alert('Integrante agregado con éxito');
       
@@ -298,7 +299,7 @@ const GestionarBrigadas: React.FC = () => {
       setSelectedBrigadaMembers(updatedMembers);
       
       // Remove from available list
-      setAvailableMembers(prev => prev.filter(m => m.id !== integranteId));
+      setAvailableMembers(prev => prev.filter(m => m.id !== member.id));
     } catch (error) {
       console.error('Error adding member:', error);
       alert('Error al agregar integrante');
@@ -343,16 +344,18 @@ const GestionarBrigadas: React.FC = () => {
     }
   };
 
-  const handleReplaceMember = async (newMemberId: number) => {
+  const handleReplaceMember = async (newMember: Integrante) => {
     if (!selectedBrigadaIdForDialog || !memberToReplace) return;
     
     if (!window.confirm(`¿Confirmar reemplazo de ${memberToReplace.nombreCompleto}?`)) return;
+
+    const rol = getMemberRole(newMember);
 
     try {
         const token = localStorage.getItem('access_token') || '';
         
         // 1. Add new member
-        await agregarIntegranteBrigada(selectedBrigadaIdForDialog, newMemberId, token);
+        await agregarIntegranteBrigada(selectedBrigadaIdForDialog, newMember.id, rol, token);
         
         // 2. Remove old member
         await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, memberToReplace.id_integrante, token);
@@ -628,7 +631,7 @@ const GestionarBrigadas: React.FC = () => {
                             size="small" 
                             variant="contained" 
                             color={memberToReplace ? "warning" : "primary"}
-                            onClick={() => memberToReplace ? handleReplaceMember(member.id) : handleAddMember(member.id)}
+                            onClick={() => memberToReplace ? handleReplaceMember(member) : handleAddMember(member)}
                           >
                             {memberToReplace ? "Reemplazar" : "Agregar"}
                           </Button>
