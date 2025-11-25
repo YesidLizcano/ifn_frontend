@@ -142,20 +142,20 @@ export interface Integrante {
 /**
  * Lista integrantes activos de la misma región que el departamento especificado,
  * disponibles en el rango de fechas y que tienen el rol especificado.
- * Endpoint: GET /integrantes/region/{departamento_id}?fechainicio=...&fechaFinAprox=...&rol=...
+ * Endpoint example: GET /integrantes/region/{departamento}?fechaInicio=YYYY-MM-DD&fechaFinAprox=YYYY-MM-DD
  */
 export async function listarIntegrantesPorRegion(
   departamento: string,
   fechaInicio: string,
   fechaFinAprox: string,
-  rol: string,
   token: string
 ): Promise<Integrante[]> {
   const baseUrl = process.env.REACT_APP_API_CORE_URL;
   if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
   const cleaned = baseUrl.replace(/\/$/, '');
+  // Usar exactamente `fechaInicio` y `fechaFinAprox` en la consulta (case-sensitive)
   const url = `${cleaned}/integrantes/region/${encodeURIComponent(departamento)}` +
-    `?fechainicio=${encodeURIComponent(fechaInicio || '')}&fechaFinAprox=${encodeURIComponent(fechaFinAprox || '')}&rol=${encodeURIComponent(rol || '')}`;
+    `?fechaInicio=${encodeURIComponent(fechaInicio || '')}&fechaFinAprox=${encodeURIComponent(fechaFinAprox || '')}`;
 
   const respuesta = await fetch(url, {
     method: 'GET',

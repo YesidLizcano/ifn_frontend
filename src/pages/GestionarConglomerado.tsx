@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { listarConglomerados, listarIntegrantesPorRegion, Integrante } from '../services/core';
-import { MenuItem } from '@mui/material';
+import { Autocomplete } from '@mui/material';
 import {
   Box,
   Card,
@@ -69,7 +69,8 @@ const GestionarConglomerados: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign' | 'assignDates'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
-  const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: string; auxiliarTecnicos: string[]; botanicos: string[]; coinvestigadores: string[] }>({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
+  type BrigadaMember = Integrante | null;
+  const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: BrigadaMember; auxiliarTecnicos: BrigadaMember[]; botanicos: BrigadaMember[]; coinvestigadores: BrigadaMember[] }>({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null] });
   const [integrantesByRole, setIntegrantesByRole] = useState<Record<string, Integrante[]>>({});
   const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
 
@@ -120,7 +121,7 @@ const GestionarConglomerados: React.FC = () => {
     setDialogType(type);
     if (type === 'assign') {
       // Inicializar datos de brigada al asignar (ahora con arrays)
-      setBrigadaData({ jefeBrigada: '', auxiliarTecnicos: [''], botanicos: [''], coinvestigadores: ['', ''] });
+      setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null] });
       // limpiar integrantes anteriores
       setIntegrantesByRole({});
     } else {
@@ -152,17 +153,16 @@ const GestionarConglomerados: React.FC = () => {
         // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
         const rolesToFetch = ['auxiliar', 'botanico', 'jefeBrigada', 'coinvestigador'];
         const results: Record<string, Integrante[]> = {};
-        for (const rol of rolesToFetch) {
-          try {
-            const res = await listarIntegrantesPorRegion(departamentoNombre, inicio, fin, rol, token);
-            // El backend puede devolver una lista con flags booleanas por rol.
-            // Filtramos por la propiedad booleana correspondiente (p.e. item['auxiliar']).
-            const lista: any[] = (res || []).filter((it: any) => Boolean(it && it[rol]));
-            results[rol] = lista;
-          } catch (err) {
-            console.warn(`Error cargando integrantes para rol ${rol}:`, err);
-            results[rol] = [];
+        try {
+          // Ahora el endpoint devuelve todos los integrantes para la región/fechas.
+          // Filtraremos en el cliente por las flags booleanas: item['auxiliar'], item['botanico'], etc.
+          const all = await listarIntegrantesPorRegion(departamentoNombre, inicio, fin, token);
+          for (const rol of rolesToFetch) {
+            results[rol] = (all || []).filter((it: any) => Boolean(it && it[rol]));
           }
+        } catch (err) {
+          console.warn('Error cargando integrantes por región:', err);
+          for (const rol of rolesToFetch) results[rol] = [];
         }
 
         setIntegrantesByRole(results);
@@ -176,7 +176,7 @@ const GestionarConglomerados: React.FC = () => {
 
   // Helpers para manejar arrays dinámicos en brigadaData
   const addArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores') => {
-    setBrigadaData(prev => ({ ...(prev as any), [field]: [...(prev as any)[field], ''] }));
+    setBrigadaData(prev => ({ ...(prev as any), [field]: [...(prev as any)[field], null] }));
   };
 
   const removeArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number) => {
@@ -188,7 +188,7 @@ const GestionarConglomerados: React.FC = () => {
     });
   };
 
-  const updateArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number, value: string) => {
+  const updateArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number, value: BrigadaMember) => {
     setBrigadaData(prev => {
       const arr = [...(prev as any)[field]];
       arr[index] = value;
@@ -199,8 +199,8 @@ const GestionarConglomerados: React.FC = () => {
   const handleAssign = () => {
     if (!selectedConglomerado) return;
     // Validación mínima
-    if (!brigadaData.jefeBrigada.trim()) {
-      alert('Ingrese el nombre del jefe de brigada');
+    if (!brigadaData.jefeBrigada) {
+      alert('Seleccione el jefe de brigada');
       return;
     }
 
@@ -208,7 +208,7 @@ const GestionarConglomerados: React.FC = () => {
     setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({
       ...c,
       estado: 'asignado',
-      observaciones: `Jefe: ${brigadaData.jefeBrigada}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).join(', ') || 'N/A'}`
+      observaciones: `Jefe: ${brigadaData.jefeBrigada?.nombreCompleto || brigadaData.jefeBrigada?.nombre || 'N/A'}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}`
     }) : c));
 
     handleCloseDialog();
@@ -268,6 +268,47 @@ const GestionarConglomerados: React.FC = () => {
   const formatFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-CO');
   };
+
+  // --- Lógica de exclusión entre selects: un integrante sólo puede ocupar una plaza ---
+  const getSelectedIds = () => {
+    const ids = new Set<number>();
+    if (brigadaData.jefeBrigada && brigadaData.jefeBrigada.id) ids.add(brigadaData.jefeBrigada.id);
+    brigadaData.auxiliarTecnicos.forEach(a => { if (a && a.id) ids.add(a.id); });
+    brigadaData.botanicos.forEach(b => { if (b && b.id) ids.add(b.id); });
+    brigadaData.coinvestigadores.forEach(c => { if (c && c.id) ids.add(c.id); });
+    return ids;
+  };
+
+  const optionsFor = (role: string, current: BrigadaMember | null) => {
+    const all = integrantesByRole[role] || [];
+    const selected = getSelectedIds();
+    return all.filter((it: Integrante) => {
+      if (!it) return false;
+      if (!it.id) return false;
+      if (!current) return !selected.has(it.id);
+      // permitir que el valor actual esté presente incluso si está en selected
+      if (current && current.id === it.id) return true;
+      return !selected.has(it.id);
+    });
+  };
+
+  const renderWithLoading = (label: string) => (params: any) => (
+    <TextField
+      {...params}
+      label={label}
+      fullWidth
+      sx={{ mb: 0 }}
+      InputProps={{
+        ...params.InputProps,
+        endAdornment: (
+          <>
+            {loadingIntegrantes ? <CircularProgress size={18} /> : null}
+            {params.InputProps.endAdornment}
+          </>
+        )
+      }}
+    />
+  );
 
   // Eliminada la función de cálculo automático de fecha fin — manejo manual por usuario
 
@@ -611,29 +652,22 @@ const GestionarConglomerados: React.FC = () => {
                 {dialogType === 'assign' && (
                   <Box sx={{ mt: 2 }}>
                     {/* Jefe de brigada: select si hay resultados, fallback a texto */}
+                    {/* Jefe de brigada: Autocomplete de selección única */}
                     {integrantesByRole['jefeBrigada'] && integrantesByRole['jefeBrigada'].length > 0 ? (
-                      <TextField
-                        select
-                        fullWidth
-                        label="Jefe de Brigada"
+                      <Autocomplete
+                        options={integrantesByRole['jefeBrigada']}
+                        getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
                         value={brigadaData.jefeBrigada}
-                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
-                        sx={{ mb: 2 }}
-                      >
-                        {loadingIntegrantes ? (
-                          <MenuItem value="">Cargando...</MenuItem>
-                        ) : (
-                          integrantesByRole['jefeBrigada'].map(i => (
-                            <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
-                          ))
-                        )}
-                      </TextField>
+                        onChange={(_, v) => setBrigadaData(prev => ({ ...prev, jefeBrigada: v }))}
+                        isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                        renderInput={renderWithLoading('Jefe de Brigada')}
+                      />
                     ) : (
                       <TextField
                         fullWidth
                         label="Jefe de Brigada"
-                        value={brigadaData.jefeBrigada}
-                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: e.target.value }))}
+                        value={brigadaData.jefeBrigada ? (brigadaData.jefeBrigada.nombreCompleto || brigadaData.jefeBrigada.nombre) : ''}
+                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: { id: -1, nombreCompleto: e.target.value } }))}
                         sx={{ mb: 2 }}
                       />
                     )}
@@ -643,26 +677,20 @@ const GestionarConglomerados: React.FC = () => {
                       {brigadaData.auxiliarTecnicos.map((a, idx) => (
                         <Box key={`aux-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
                           {integrantesByRole['auxiliar'] && integrantesByRole['auxiliar'].length > 0 ? (
-                            <TextField
-                              select
+                            <Autocomplete
+                              options={optionsFor('auxiliar', brigadaData.auxiliarTecnicos[idx])}
+                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
+                              value={brigadaData.auxiliarTecnicos[idx]}
+                              onChange={(_, v) => updateArrayItem('auxiliarTecnicos', idx, v)}
+                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                              renderInput={renderWithLoading(`Auxiliar ${idx + 1}`)}
                               fullWidth
-                              value={a}
-                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
-                              placeholder={`Auxiliar ${idx + 1}`}
-                            >
-                              {loadingIntegrantes ? (
-                                <MenuItem value="">Cargando...</MenuItem>
-                              ) : (
-                                integrantesByRole['auxiliar'].map(i => (
-                                  <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
-                                ))
-                              )}
-                            </TextField>
+                            />
                           ) : (
                             <TextField
                               fullWidth
-                              value={a}
-                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, e.target.value)}
+                              value={a ? (a.nombreCompleto || a.nombre) : ''}
+                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, { id: -1, nombreCompleto: e.target.value })}
                               placeholder={`Auxiliar ${idx + 1}`}
                             />
                           )}
@@ -677,26 +705,20 @@ const GestionarConglomerados: React.FC = () => {
                       {brigadaData.botanicos.map((b, idx) => (
                         <Box key={`bot-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
                           {integrantesByRole['botanico'] && integrantesByRole['botanico'].length > 0 ? (
-                            <TextField
-                              select
+                            <Autocomplete
+                              options={optionsFor('botanico', brigadaData.botanicos[idx])}
+                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
+                              value={brigadaData.botanicos[idx]}
+                              onChange={(_, v) => updateArrayItem('botanicos', idx, v)}
+                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                              renderInput={renderWithLoading(`Botánico ${idx + 1}`)}
                               fullWidth
-                              value={b}
-                              onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
-                              placeholder={`Botánico ${idx + 1}`}
-                            >
-                              {loadingIntegrantes ? (
-                                <MenuItem value="">Cargando...</MenuItem>
-                              ) : (
-                                 integrantesByRole['botanico'].map(i => (
-                                   <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
-                                 ))
-                              )}
-                            </TextField>
+                            />
                           ) : (
                             <TextField
                               fullWidth
-                              value={b}
-                              onChange={(e) => updateArrayItem('botanicos', idx, e.target.value)}
+                              value={b ? (b.nombreCompleto || b.nombre) : ''}
+                              onChange={(e) => updateArrayItem('botanicos', idx, { id: -1, nombreCompleto: e.target.value })}
                               placeholder={`Botánico ${idx + 1}`}
                             />
                           )}
@@ -711,26 +733,20 @@ const GestionarConglomerados: React.FC = () => {
                       {brigadaData.coinvestigadores.map((c, idx) => (
                         <Box key={`ci-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
                           {integrantesByRole['coinvestigador'] && integrantesByRole['coinvestigador'].length > 0 ? (
-                            <TextField
-                              select
+                            <Autocomplete
+                              options={optionsFor('coinvestigador', brigadaData.coinvestigadores[idx])}
+                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
+                              value={brigadaData.coinvestigadores[idx]}
+                              onChange={(_, v) => updateArrayItem('coinvestigadores', idx, v)}
+                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                              renderInput={renderWithLoading(`Coinvestigador ${idx + 1}`)}
                               fullWidth
-                              value={c}
-                              onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
-                              placeholder={`Coinvestigador ${idx + 1}`}
-                            >
-                              {loadingIntegrantes ? (
-                                <MenuItem value="">Cargando...</MenuItem>
-                              ) : (
-                                integrantesByRole['coinvestigador'].map(i => (
-                                  <MenuItem key={i.id} value={i.nombreCompleto || i.nombre}>{i.nombreCompleto || i.nombre}</MenuItem>
-                                ))
-                              )}
-                            </TextField>
+                            />
                           ) : (
                             <TextField
                               fullWidth
-                              value={c}
-                              onChange={(e) => updateArrayItem('coinvestigadores', idx, e.target.value)}
+                              value={c ? (c.nombreCompleto || c.nombre) : ''}
+                              onChange={(e) => updateArrayItem('coinvestigadores', idx, { id: -1, nombreCompleto: e.target.value })}
                               placeholder={`Coinvestigador ${idx + 1}`}
                             />
                           )}
@@ -791,7 +807,11 @@ const GestionarConglomerados: React.FC = () => {
                   color="primary"
                   startIcon={<SaveIcon />}
                   onClick={handleAssign}
-                  disabled={!brigadaData.jefeBrigada.trim() || brigadaData.auxiliarTecnicos.filter(a => a.trim()).length < 1 || brigadaData.botanicos.filter(b => b.trim()).length < 1}
+                  disabled={(
+                    !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id && brigadaData.jefeBrigada.id !== -1) ||
+                    brigadaData.auxiliarTecnicos.filter(a => a && a.id && a.id !== -1).length < 1 ||
+                    brigadaData.botanicos.filter(b => b && b.id && b.id !== -1).length < 1
+                  )}
                 >
                   Asignar Brigada
                 </Button>
