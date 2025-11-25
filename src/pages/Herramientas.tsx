@@ -23,7 +23,7 @@ import {
   Chip,
   Autocomplete
 } from '@mui/material';
-import { listarHerramientas, crearHerramienta, actualizarHerramienta, Herramienta as HerramientaService } from '../services/core';
+import { listarHerramientas, crearHerramienta, actualizarHerramienta, eliminarHerramienta, Herramienta as HerramientaService } from '../services/core';
 
 // Interfaces para los datos
 interface Herramienta {
@@ -308,12 +308,50 @@ const GestionarHerramientas: React.FC = () => {
     handleCloseDialog();
   };
 
-  // Eliminar herramienta
-  const handleDelete = () => {
-    if (selectedHerramienta) {
-      setHerramientas(prev => 
-        prev.filter(herramienta => herramienta.id !== selectedHerramienta.id)
-      );
+  // Eliminar herramienta (llama al backend)
+  const handleDelete = async () => {
+    if (!selectedHerramienta) return;
+
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      const id = parseInt(selectedHerramienta.id);
+
+      // Llamar al endpoint DELETE
+      const resp = await eliminarHerramienta(id, token);
+
+      // Mostrar resultado devuelto por el backend
+      try {
+        const detalle = resp && typeof resp === 'object' ? JSON.stringify(resp) : String(resp);
+        alert(`Eliminación realizada. Respuesta servidor: ${detalle}`);
+      } catch (e) {
+        alert('Eliminación realizada correctamente.');
+      }
+
+      // Recargar lista desde backend para reflejar estado real
+      try {
+        const fresh = await listarHerramientas(selectedDepartment || '', token);
+        const mappedFresh: Herramienta[] = fresh.map((h: HerramientaService) => ({
+          id: h.id.toString(),
+          nombre: h.nombre,
+          cantidadTotal: h.cantidad,
+          disponibles: h.cantidad,
+          ocupadas: 0,
+          departamento: selectedDepartment || '',
+          departamento_id: h.departamento_id,
+          fechaCreacion: new Date().toISOString()
+        }));
+        setHerramientas(mappedFresh);
+      } catch (e) {
+        console.warn('No se pudo recargar la lista tras la eliminación:', e);
+        // Como fallback, eliminar localmente
+        setHerramientas(prev => prev.filter(h => h.id !== selectedHerramienta.id));
+      }
+
+    } catch (error) {
+      console.error('Error eliminando herramienta:', error);
+      const msg = (error as any)?.message || JSON.stringify(error) || 'Error al eliminar la herramienta';
+      alert(`Error al eliminar la herramienta: ${msg}`);
+    } finally {
       handleCloseDialog();
     }
   };

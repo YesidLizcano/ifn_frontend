@@ -540,3 +540,39 @@ export async function actualizarHerramienta(
 
   return await respuesta.json();
 }
+
+// Eliminar herramienta / material o equipo
+export async function eliminarHerramienta(
+  materialEquipoId: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/materiales_equipos/${materialEquipoId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al eliminar herramienta';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  try {
+    return await respuesta.json();
+  } catch (e) {
+    return { success: true };
+  }
+}
