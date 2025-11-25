@@ -176,3 +176,47 @@ export async function listarIntegrantesPorRegion(
 
   return await respuesta.json();
 }
+
+// Asignar brigada a un conglomerado
+export interface IntegranteAsignado {
+  integrante_id: number;
+  rol_asignado: string;
+}
+
+export interface BrigadaCrear {
+  fechaCreacion: string;
+  estado: string;
+  fechaInicio: string;
+  fechaFinAprox: string;
+  integrantes_asignados: IntegranteAsignado[];
+}
+
+export async function asignarBrigada(
+  conglomeradoId: number,
+  brigada: BrigadaCrear,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/brigadas/${conglomeradoId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(brigada),
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al asignar la brigada';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}

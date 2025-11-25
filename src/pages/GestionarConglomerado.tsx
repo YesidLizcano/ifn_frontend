@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { listarConglomerados, listarIntegrantesPorRegion, Integrante } from '../services/core';
+import {
+  listarConglomerados,
+  listarIntegrantesPorRegion,
+  Integrante,
+  asignarBrigada,
+  BrigadaCrear,
+} from '../services/core';
 import { Autocomplete } from '@mui/material';
 import {
   Box,
@@ -21,7 +27,7 @@ import {
 
 // Interfaces para los datos
 interface Conglomerado {
-  id: string;
+  id: string; // Se usará el ID numérico del backend, pero como string para consistencia
   latitud: number;
   longitud: number;
   departamento: string;
@@ -73,6 +79,7 @@ const GestionarConglomerados: React.FC = () => {
   const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: BrigadaMember; auxiliarTecnicos: BrigadaMember[]; botanicos: BrigadaMember[]; coinvestigadores: BrigadaMember[] }>({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
   const [integrantesByRole, setIntegrantesByRole] = useState<Record<string, Integrante[]>>({});
   const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
+  const [loadingAssign, setLoadingAssign] = useState(false);
 
   // Cargar conglomerados desde backend
   useEffect(() => {
@@ -84,7 +91,7 @@ const GestionarConglomerados: React.FC = () => {
 
         // Mapear respuesta a la interfaz local Conglomerado
         const mapped: Conglomerado[] = datos.map(d => ({
-          id: `CONG-${d.municipio_nombre}`,
+          id: String(d.id), // Usar el ID numérico del backend como string
           latitud: d.latitud,
           longitud: d.longitud,
           departamento: d.departamento_nombre,
@@ -121,9 +128,14 @@ const GestionarConglomerados: React.FC = () => {
     setDialogType(type);
     if (type === 'assign') {
       // Inicializar datos de brigada al asignar (ahora con arrays)
-      setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null] });
+      setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
       // limpiar integrantes anteriores
       setIntegrantesByRole({});
+    } else if (type === 'assignDates') {
+      setEditData({
+        fechaInicio: conglomerado.fechaInicio,
+        fechaFinAprox: conglomerado.fechaFinAprox
+      });
     } else {
       setEditData({
         fechaInicio: conglomerado.fechaInicio,
@@ -198,22 +210,73 @@ const GestionarConglomerados: React.FC = () => {
     });
   };
 
-  const handleAssign = () => {
-    if (!selectedConglomerado) return;
-    // Validación mínima
-    if (!brigadaData.jefeBrigada) {
+  const handleAssign = async () => {
+    if (!selectedConglomerado || !selectedConglomerado.id) return;
+
+    // 1. Validaciones
+    if (!brigadaData.jefeBrigada?.id) {
       alert('Seleccione el jefe de brigada');
       return;
     }
+    if (brigadaData.auxiliarTecnicos.filter(Boolean).length < 1) {
+      alert('Debe asignar al menos un auxiliar técnico');
+      return;
+    }
+    if (brigadaData.botanicos.filter(Boolean).length < 1) {
+      alert('Debe asignar al menos un botánico');
+      return;
+    }
+    if (brigadaData.coinvestigadores.filter(Boolean).length < 2) {
+      alert('Debe asignar al menos dos coinvestigadores');
+      return;
+    }
 
-    // Actualizar estado y dejar un resumen en observaciones (simulación local)
-    setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({
-      ...c,
-      estado: 'asignado',
-      observaciones: `Jefe: ${brigadaData.jefeBrigada?.nombreCompleto || brigadaData.jefeBrigada?.nombre || 'N/A'}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Coinvestigadores: ${brigadaData.coinvestigadores.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}`
-    }) : c));
+    // 2. Construir el payload para la API
+    const integrantes_asignados: { integrante_id: number; rol_asignado: string }[] = [];
 
-    handleCloseDialog();
+    if (brigadaData.jefeBrigada.id) {
+      integrantes_asignados.push({ integrante_id: brigadaData.jefeBrigada.id, rol_asignado: 'JEFE_BRIGADA' });
+    }
+    brigadaData.auxiliarTecnicos.forEach(a => {
+      if (a?.id) integrantes_asignados.push({ integrante_id: a.id, rol_asignado: 'AUXILIAR' });
+    });
+    brigadaData.botanicos.forEach(b => {
+      if (b?.id) integrantes_asignados.push({ integrante_id: b.id, rol_asignado: 'BOTANICO' });
+    });
+    brigadaData.coinvestigadores.forEach(c => {
+      if (c?.id) integrantes_asignados.push({ integrante_id: c.id, rol_asignado: 'COINVESTIGADOR' });
+    });
+
+    const brigadaPayload: BrigadaCrear = {
+      fechaCreacion: new Date().toISOString().split('T')[0], // Hoy
+      estado: 'ACTIVA',
+      fechaInicio: (editData.fechaInicio as string) || selectedConglomerado.fechaInicio,
+      fechaFinAprox: (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox,
+      integrantes_asignados,
+    };
+
+    // 3. Llamar al servicio
+    setLoadingAssign(true);
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      await asignarBrigada(Number(selectedConglomerado.id), brigadaPayload, token);
+
+      // 4. Actualizar UI en caso de éxito
+      setConglomerados(prev => prev.map(c => 
+        c.id === selectedConglomerado.id 
+          ? { ...c, estado: 'asignado', fechaInicio: brigadaPayload.fechaInicio, fechaFinAprox: brigadaPayload.fechaFinAprox } 
+          : c
+      ));
+      
+      alert('Brigada asignada con éxito');
+      handleCloseDialog();
+
+    } catch (error) {
+      console.error('Error al asignar la brigada:', error);
+      alert(`Error al asignar la brigada: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    } finally {
+      setLoadingAssign(false);
+    }
   };
 
   // Guardar fechas antes de abrir el diálogo de asignación
@@ -251,6 +314,7 @@ const GestionarConglomerados: React.FC = () => {
     setDialogOpen(false);
     setSelectedConglomerado(null);
     setEditData({});
+    setLoadingAssign(false); // Resetear estado de carga
   };
 
   // Función para obtener el color del estado
@@ -266,7 +330,8 @@ const GestionarConglomerados: React.FC = () => {
 
   // Función para formatear fecha
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-CO');
+    if (!fecha) return 'N/A';
+    return new Date(fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' });
   };
 
   // --- Lógica de exclusión entre selects: un integrante sólo puede ocupar una plaza ---
@@ -283,11 +348,10 @@ const GestionarConglomerados: React.FC = () => {
     const all = integrantesByRole[role] || [];
     const selected = getSelectedIds();
     return all.filter((it: Integrante) => {
-      if (!it) return false;
-      if (!it.id) return false;
-      if (!current) return !selected.has(it.id);
-      // permitir que el valor actual esté presente incluso si está en selected
+      if (!it || !it.id) return false;
+      // Si el integrante actual está siendo evaluado, siempre debe aparecer en la lista
       if (current && current.id === it.id) return true;
+      // Si no, solo debe aparecer si no ha sido seleccionado en otro rol
       return !selected.has(it.id);
     });
   };
@@ -468,8 +532,8 @@ const GestionarConglomerados: React.FC = () => {
                 >
                   {/* Header de la tarjeta */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#2E7D32' }}>
-                      {conglomerado.id}
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
+                      ID: {conglomerado.id}
                     </Typography>
                     <Chip 
                       label={conglomerado.estado} 
@@ -566,6 +630,7 @@ const GestionarConglomerados: React.FC = () => {
             {dialogType === 'edit' && `Editar Conglomerado ${selectedConglomerado?.id}`}
             {dialogType === 'delete' && 'Eliminar Conglomerado'}
             {dialogType === 'assign' && `Asignar Brigada a ${selectedConglomerado?.id}`}
+            {dialogType === 'assignDates' && `Asignar Fechas a ${selectedConglomerado?.id}`}
           </DialogTitle>
           <DialogContent>
             {selectedConglomerado && (
@@ -589,29 +654,17 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaInicio || ''}
                       onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
                       InputLabelProps={{ shrink: true }}
-                      sx={{ mb: 2 }}
+                      sx={{ my: 2 }}
                     />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <TextField
-                        fullWidth
-                        label="Fecha Fin Aprox"
-                        type="date"
-                        value={editData.fechaFinAprox || ''}
-                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => {
-                              // En modo edición dejamos que el usuario guarde manualmente
-                              // No se calcula automáticamente la fecha fin.
-                            }}
-                          >
-                            Siguiente
-                          </Button>
-                    </Box>
+                    <TextField
+                      fullWidth
+                      label="Fecha Fin Aprox"
+                      type="date"
+                      value={editData.fechaFinAprox || ''}
+                      onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
                   </Box>
                 )}
 
@@ -627,127 +680,87 @@ const GestionarConglomerados: React.FC = () => {
                       value={editData.fechaInicio || ''}
                       onChange={(e) => handleEditChange('fechaInicio', e.target.value)}
                       InputLabelProps={{ shrink: true }}
-                      sx={{ mb: 2 }}
+                      sx={{ my: 2 }}
                     />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <TextField
-                        fullWidth
-                        label="Fecha Fin Aprox"
-                        type="date"
-                        value={editData.fechaFinAprox || ''}
-                        onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    
-                    </Box>
+                    <TextField
+                      fullWidth
+                      label="Fecha Fin Aprox"
+                      type="date"
+                      value={editData.fechaFinAprox || ''}
+                      onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
                   </Box>
                 )}
                 {dialogType === 'assign' && (
                   <Box sx={{ mt: 2 }}>
                     {/* Jefe de brigada: select si hay resultados, fallback a texto */}
                     {/* Jefe de brigada: Autocomplete siempre visible, permite texto libre con freeSolo */}
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>Jefe de Brigada</Typography>
                     <Autocomplete
                       options={optionsFor('jefeBrigada', brigadaData.jefeBrigada)}
                       getOptionLabel={(o: any) => (typeof o === 'string' ? o : (o?.nombreCompleto || o?.nombre || ''))}
                       value={brigadaData.jefeBrigada}
-                      freeSolo
-                      onChange={(_, v) => {
-                        if (!v) {
-                          setBrigadaData(prev => ({ ...prev, jefeBrigada: null }));
-                        } else if (typeof v === 'string') {
-                          setBrigadaData(prev => ({ ...prev, jefeBrigada: { id: -1, nombreCompleto: v } }));
-                        } else {
-                          setBrigadaData(prev => ({ ...prev, jefeBrigada: v }));
-                        }
-                      }}
-                      isOptionEqualToValue={(option, value) => (option?.id && value?.id) ? option.id === value.id : String(option) === String(value)}
+                      onChange={(_, v) => setBrigadaData(prev => ({ ...prev, jefeBrigada: v as BrigadaMember }))}
+                      isOptionEqualToValue={(option, value) => option?.id === value?.id}
                       renderInput={renderWithLoading('Jefe de Brigada')}
+                      sx={{ mb: 2 }}
                     />
 
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>Auxiliares Técnicos</Typography>
-                      {brigadaData.auxiliarTecnicos.map((a, idx) => (
-                        <Box key={`aux-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          {integrantesByRole['auxiliar'] && integrantesByRole['auxiliar'].length > 0 ? (
-                            <Autocomplete
-                              options={optionsFor('auxiliar', brigadaData.auxiliarTecnicos[idx])}
-                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
-                              value={brigadaData.auxiliarTecnicos[idx]}
-                              onChange={(_, v) => updateArrayItem('auxiliarTecnicos', idx, v)}
-                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                              renderInput={renderWithLoading(`Auxiliar ${idx + 1}`)}
-                              fullWidth
-                            />
-                          ) : (
-                            <TextField
-                              fullWidth
-                              value={a ? (a.nombreCompleto || a.nombre) : ''}
-                              onChange={(e) => updateArrayItem('auxiliarTecnicos', idx, { id: -1, nombreCompleto: e.target.value })}
-                              placeholder={`Auxiliar ${idx + 1}`}
-                            />
-                          )}
-                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('auxiliarTecnicos', idx)}>-</Button>
-                        </Box>
-                      ))}
-                      <Button size="small" onClick={() => addArrayItem('auxiliarTecnicos')}>Agregar Auxiliar</Button>
-                    </Box>
+                    {/* Auxiliares Técnicos */}
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>Auxiliares Técnicos</Typography>
+                    {brigadaData.auxiliarTecnicos.map((aux, index) => (
+                      <Box key={`aux-${index}`} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                        <Autocomplete
+                          options={optionsFor('auxiliar', aux)}
+                          getOptionLabel={(o: any) => (typeof o === 'string' ? o : (o?.nombreCompleto || o?.nombre || ''))}
+                          value={aux}
+                          onChange={(_, v) => updateArrayItem('auxiliarTecnicos', index, v as BrigadaMember)}
+                          isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                          renderInput={renderWithLoading(`Auxiliar Técnico #${index + 1}`)}
+                          sx={{ flex: 1 }}
+                        />
+                        <Button size="small" variant="outlined" onClick={() => removeArrayItem('auxiliarTecnicos', index)}>-</Button>
+                      </Box>
+                    ))}
+                    <Button size="small" onClick={() => addArrayItem('auxiliarTecnicos')}>Agregar Auxiliar</Button>
 
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>Botánicos</Typography>
-                      {brigadaData.botanicos.map((b, idx) => (
-                        <Box key={`bot-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          {integrantesByRole['botanico'] && integrantesByRole['botanico'].length > 0 ? (
-                            <Autocomplete
-                              options={optionsFor('botanico', brigadaData.botanicos[idx])}
-                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
-                              value={brigadaData.botanicos[idx]}
-                              onChange={(_, v) => updateArrayItem('botanicos', idx, v)}
-                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                              renderInput={renderWithLoading(`Botánico ${idx + 1}`)}
-                              fullWidth
-                            />
-                          ) : (
-                            <TextField
-                              fullWidth
-                              value={b ? (b.nombreCompleto || b.nombre) : ''}
-                              onChange={(e) => updateArrayItem('botanicos', idx, { id: -1, nombreCompleto: e.target.value })}
-                              placeholder={`Botánico ${idx + 1}`}
-                            />
-                          )}
-                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('botanicos', idx)}>-</Button>
-                        </Box>
-                      ))}
-                      <Button size="small" onClick={() => addArrayItem('botanicos')}>Agregar Botánico</Button>
-                    </Box>
+                    {/* Botánicos */}
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>Botánicos</Typography>
+                    {brigadaData.botanicos.map((bot, index) => (
+                      <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                        <Autocomplete
+                          options={optionsFor('botanico', bot)}
+                          getOptionLabel={(o: any) => (typeof o === 'string' ? o : (o?.nombreCompleto || o?.nombre || ''))}
+                          value={bot}
+                          onChange={(_, v) => updateArrayItem('botanicos', index, v as BrigadaMember)}
+                          isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                          renderInput={renderWithLoading(`Botánico #${index + 1}`)}
+                          sx={{ flex: 1 }}
+                        />
+                        <Button size="small" variant="outlined" onClick={() => removeArrayItem('botanicos', index)}>-</Button>
+                      </Box>
+                    ))}
+                    <Button size="small" onClick={() => addArrayItem('botanicos')}>Agregar Botánico</Button>
 
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>Coinvestigadores</Typography>
-                      {brigadaData.coinvestigadores.map((c, idx) => (
-                        <Box key={`ci-${idx}`} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                          {integrantesByRole['coinvestigador'] && integrantesByRole['coinvestigador'].length > 0 ? (
-                            <Autocomplete
-                              options={optionsFor('coinvestigador', brigadaData.coinvestigadores[idx])}
-                              getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
-                              value={brigadaData.coinvestigadores[idx]}
-                              onChange={(_, v) => updateArrayItem('coinvestigadores', idx, v)}
-                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                              renderInput={renderWithLoading(`Coinvestigador ${idx + 1}`)}
-                              fullWidth
-                            />
-                          ) : (
-                            <TextField
-                              fullWidth
-                              value={c ? (c.nombreCompleto || c.nombre) : ''}
-                              onChange={(e) => updateArrayItem('coinvestigadores', idx, { id: -1, nombreCompleto: e.target.value })}
-                              placeholder={`Coinvestigador ${idx + 1}`}
-                            />
-                          )}
-                          <Button size="small" variant="outlined" onClick={() => removeArrayItem('coinvestigadores', idx)}>-</Button>
-                        </Box>
-                      ))}
-                      <Button size="small" onClick={() => addArrayItem('coinvestigadores')}>Agregar Coinvestigador</Button>
-                    </Box>
+                    {/* Coinvestigadores */}
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>Coinvestigadores</Typography>
+                    {brigadaData.coinvestigadores.map((co, index) => (
+                      <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                        <Autocomplete
+                          options={optionsFor('coinvestigador', co)}
+                          getOptionLabel={(o: any) => (typeof o === 'string' ? o : (o?.nombreCompleto || o?.nombre || ''))}
+                          value={co}
+                          onChange={(_, v) => updateArrayItem('coinvestigadores', index, v as BrigadaMember)}
+                          isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                          renderInput={renderWithLoading(`Coinvestigador #${index + 1}`)}
+                          sx={{ flex: 1 }}
+                        />
+                        <Button size="small" variant="outlined" onClick={() => removeArrayItem('coinvestigadores', index)}>-</Button>
+                      </Box>
+                    ))}
+                    <Button size="small" onClick={() => addArrayItem('coinvestigadores')}>Agregar Coinvestigador</Button>
                   </Box>
                 )}
                 
@@ -760,12 +773,11 @@ const GestionarConglomerados: React.FC = () => {
             )}
           </DialogContent>
             <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancelar</Button>
+              <Button onClick={handleCloseDialog} disabled={loadingAssign}>Cancelar</Button>
               {dialogType === 'assignDates' && (
                 <Button
                   variant="contained"
                   color="primary"
-                  startIcon={<SaveIcon />}
                   onClick={handleSaveDates}
                   disabled={
                     !editData.fechaInicio || !String(editData.fechaInicio).trim() ||
@@ -800,16 +812,16 @@ const GestionarConglomerados: React.FC = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  startIcon={<SaveIcon />}
+                  startIcon={loadingAssign ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                   onClick={handleAssign}
-                  disabled={(
-                    !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id && brigadaData.jefeBrigada.id !== -1) ||
-                    brigadaData.auxiliarTecnicos.filter(a => a && a.id && a.id !== -1).length < 1 ||
-                    brigadaData.botanicos.filter(b => b && b.id && b.id !== -1).length < 1 ||
-                    brigadaData.coinvestigadores.filter(c => c && c.id && c.id !== -1).length < 2
+                  disabled={loadingAssign || (
+                    !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id) ||
+                    brigadaData.auxiliarTecnicos.filter(a => a && a.id).length < 1 ||
+                    brigadaData.botanicos.filter(b => b && b.id).length < 1 ||
+                    brigadaData.coinvestigadores.filter(c => c && c.id).length < 2
                   )}
                 >
-                  Asignar Brigada
+                  {loadingAssign ? 'Asignando...' : 'Asignar Brigada'}
                 </Button>
               )}
               {dialogType === 'delete' && (
