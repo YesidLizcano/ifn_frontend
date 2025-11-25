@@ -639,13 +639,7 @@ const GestionarConglomerados: React.FC = () => {
                         onChange={(e) => handleEditChange('fechaFinAprox', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                       />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={handleSaveDates}
-                          >
-                            Siguiente
-                          </Button>
+                    
                     </Box>
                   </Box>
                 )}
