@@ -262,15 +262,13 @@ export async function eliminarConglomerado(
   }
 }
 
-// Listar todas las brigadas
+// Listar brigadas
 export interface RawBrigadaResponse {
-  id: number;
   fechaCreacion: string;
   estado: string;
-  fechaInicio: string;
-  fechaFinAprox: string;
-  integrantes: { integrante_id: number; rol_asignado: string; nombre_completo: string }[];
-  conglomerado_info?: { id: number; nombre: string; };
+  conglomerado_id: number;
+  id: number;
+  integrantes: string;
 }
 
 export async function listarBrigadas(token: string): Promise<RawBrigadaResponse[]> {
@@ -287,7 +285,7 @@ export async function listarBrigadas(token: string): Promise<RawBrigadaResponse[
   });
 
   if (!respuesta.ok) {
-    let detalle = 'Error al listar las brigadas';
+    let detalle = 'Error al listar brigadas';
     try {
       const data = await respuesta.json();
       if (data?.detail) {

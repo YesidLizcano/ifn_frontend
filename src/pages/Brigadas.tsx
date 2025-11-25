@@ -13,20 +13,15 @@ import {
 } from '@mui/material';
 import { listarBrigadas, RawBrigadaResponse } from '../services/core';
 
-interface BrigadaIntegrante {
-  integrante_id: number;
-  rol_asignado: string;
-  nombre_completo?: string;
-}
-
 interface Brigada {
   id: number;
   fechaCreacion: string;
   estado: string;
   fechaInicio: string;
   fechaFinAprox: string;
-  integrantes: BrigadaIntegrante[];
+  integrantes: string;
   conglomeradoNombre?: string;
+  conglomerado_id?: number;
 }
 
 type EstadoChipColor = 'default' | 'primary' | 'success' | 'warning' | 'error';
@@ -44,15 +39,6 @@ const formatFecha = (fecha: string) => {
   const parsed = new Date(fecha);
   if (Number.isNaN(parsed.getTime())) return fecha;
   return parsed.toLocaleDateString('es-CO');
-};
-
-const formatRol = (rol: string) => {
-  if (!rol) return 'Sin rol';
-  return rol
-    .toLowerCase()
-    .split('_')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 };
 
 const getEstadoChipColor = (estado: string): EstadoChipColor => {
@@ -89,13 +75,6 @@ const getEstadoBorderColor = (estado: string) => {
   }
 };
 
-const displayNombreIntegrante = (integrante: BrigadaIntegrante) => {
-  if (integrante.nombre_completo && integrante.nombre_completo.trim()) {
-    return integrante.nombre_completo;
-  }
-  return `Integrante ${integrante.integrante_id}`;
-};
-
 const GestionarBrigadas: React.FC = () => {
   const [brigadas, setBrigadas] = useState<Brigada[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,14 +92,11 @@ const GestionarBrigadas: React.FC = () => {
           id: brigada.id,
           fechaCreacion: brigada.fechaCreacion ?? '',
           estado: brigada.estado ?? 'Desconocido',
-          fechaInicio: brigada.fechaInicio ?? '',
-          fechaFinAprox: brigada.fechaFinAprox ?? '',
-          integrantes: (brigada.integrantes ?? []).map((integrante) => ({
-            integrante_id: integrante.integrante_id,
-            rol_asignado: integrante.rol_asignado,
-            nombre_completo: integrante.nombre_completo
-          })),
-          conglomeradoNombre: brigada.conglomerado_info?.nombre
+          fechaInicio: '', // No viene en el endpoint actual
+          fechaFinAprox: '', // No viene en el endpoint actual
+          integrantes: brigada.integrantes || 'Sin información',
+          conglomerado_id: brigada.conglomerado_id,
+          conglomeradoNombre: `Conglomerado ${brigada.conglomerado_id}` // Placeholder hasta tener nombre real
         }));
         setBrigadas(mapped);
       } catch (err) {
@@ -142,11 +118,7 @@ const GestionarBrigadas: React.FC = () => {
       const idMatch = formatBrigadaId(brigada.id).toLowerCase().includes(normalizedSearch);
       const estadoMatch = brigada.estado.toLowerCase().includes(normalizedSearch);
       const conglomeradoMatch = brigada.conglomeradoNombre?.toLowerCase().includes(normalizedSearch) ?? false;
-      const integrantesMatch = brigada.integrantes.some((integrante) => {
-        const nombre = displayNombreIntegrante(integrante).toLowerCase();
-        const rol = formatRol(integrante.rol_asignado).toLowerCase();
-        return nombre.includes(normalizedSearch) || rol.includes(normalizedSearch);
-      });
+      const integrantesMatch = brigada.integrantes.toLowerCase().includes(normalizedSearch);
       return idMatch || estadoMatch || conglomeradoMatch || integrantesMatch;
     });
   }, [brigadas, normalizedSearch]);
@@ -315,19 +287,11 @@ const GestionarBrigadas: React.FC = () => {
 
                     <Box sx={{ mt: 2 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Integrantes ({brigada.integrantes.length})
+                        Integrantes
                       </Typography>
-                      {brigada.integrantes.length === 0 ? (
-                        <Typography variant="body2" color="textSecondary">
-                          No hay integrantes asociados
-                        </Typography>
-                      ) : (
-                        brigada.integrantes.map((integrante) => (
-                          <Typography key={`${brigada.id}-${integrante.integrante_id}`} variant="body2" sx={{ pl: 1 }}>
-                            <strong>{formatRol(integrante.rol_asignado)}:</strong> {displayNombreIntegrante(integrante)}
-                          </Typography>
-                        ))
-                      )}
+                      <Typography variant="body2" color="textSecondary">
+                        {brigada.integrantes}
+                      </Typography>
                     </Box>
                   </Box>
                 </Paper>
