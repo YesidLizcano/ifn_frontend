@@ -281,13 +281,19 @@ const GestionarConglomerados: React.FC = () => {
           ? { ...c, estado: 'asignado', fechaInicio: brigadaPayload.fechaInicio, fechaFinAprox: brigadaPayload.fechaFinAprox } 
           : c
       ));
-      
+
+      // Limpiar y reiniciar contenedores relacionados con la creación de brigada
+      setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
+      setIntegrantesByRole({});
+
       alert('Brigada asignada con éxito');
       handleCloseDialog();
 
     } catch (error) {
       console.error('Error al asignar la brigada:', error);
-      alert(`Error al asignar la brigada: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      // Extraer mensaje detallado si el servicio lo arrojó en error.message
+      const mensaje = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`Error al asignar la brigada: ${mensaje}`);
     } finally {
       setLoadingAssign(false);
     }
