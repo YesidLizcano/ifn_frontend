@@ -230,6 +230,28 @@ const GestionarBrigadas: React.FC = () => {
 
   const handleDeleteMember = async (integranteId: number) => {
     if (!selectedBrigadaIdForDialog) return;
+
+    const memberToDelete = selectedBrigadaMembers.find(m => m.id_integrante === integranteId);
+    if (memberToDelete) {
+      const roleCounts = selectedBrigadaMembers.reduce((acc, curr) => {
+        acc[curr.rol] = (acc[curr.rol] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const MINIMUMS: Record<string, number> = {
+        'JEFE_BRIGADA': 1,
+        'BOTANICO': 1,
+        'AUXILIAR': 1,
+        'COINVESTIGADOR': 2
+      };
+
+      const role = memberToDelete.rol;
+      if (roleCounts[role] <= (MINIMUMS[role] || 0)) {
+        alert(`No se puede eliminar. La brigada requiere mínimo ${MINIMUMS[role]} ${role.replace('_', ' ')}.`);
+        return;
+      }
+    }
+
     if (!window.confirm('¿Está seguro que desea eliminar este integrante de la brigada?')) return;
 
     try {
