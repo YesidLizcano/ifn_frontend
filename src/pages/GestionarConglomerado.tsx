@@ -533,7 +533,7 @@ const GestionarConglomerados: React.FC = () => {
                   {/* Header de la tarjeta */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
-                      ID: {conglomerado.id}
+                      ID: CONG-{conglomerado.municipio}
                     </Typography>
                     <Chip 
                       label={conglomerado.estado} 
@@ -627,10 +627,10 @@ const GestionarConglomerados: React.FC = () => {
           }}
         >
           <DialogTitle>
-            {dialogType === 'edit' && `Editar Conglomerado ${selectedConglomerado?.id}`}
+            {dialogType === 'edit' && `Editar Conglomerado CONG-${selectedConglomerado?.municipio}`}
             {dialogType === 'delete' && 'Eliminar Conglomerado'}
-            {dialogType === 'assign' && `Asignar Brigada a ${selectedConglomerado?.id}`}
-            {dialogType === 'assignDates' && `Asignar Fechas a ${selectedConglomerado?.id}`}
+            {dialogType === 'assign' && `Asignar Brigada a CONG-${selectedConglomerado?.municipio}`}
+            {dialogType === 'assignDates' && `Asignar Fechas a CONG-${selectedConglomerado?.municipio}`}
           </DialogTitle>
           <DialogContent>
             {selectedConglomerado && (
@@ -766,7 +766,7 @@ const GestionarConglomerados: React.FC = () => {
                 
                 {dialogType === 'delete' && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
-                    ¿Está seguro que desea eliminar el conglomerado {selectedConglomerado.id}?
+                    ¿Está seguro que desea eliminar el conglomerado CONG-{selectedConglomerado.municipio}?
                   </Alert>
                 )}
               </>
