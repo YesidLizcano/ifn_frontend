@@ -6,7 +6,6 @@ import {
   Typography,
   Button,
   TextField,
-  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,8 +20,10 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Chip
+  Chip,
+  Autocomplete
 } from '@mui/material';
+import { listarHerramientas, crearHerramienta, Herramienta as HerramientaService } from '../services/core';
 
 // Interfaces para los datos
 interface Herramienta {
@@ -35,13 +36,15 @@ interface Herramienta {
   fechaCreacion: string;
 }
 
-// Componentes de íconos alternativos
-const SearchIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-  </svg>
-);
+const DEPARTAMENTOS_COLOMBIA = [
+  "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá",
+  "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare",
+  "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo",
+  "Quindío", "Risaralda", "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
+  "Valle del Cauca", "Vaupés", "Vichada"
+];
 
+// Componentes de íconos alternativos
 const EditIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -69,92 +72,73 @@ const AddIcon = () => (
 const GestionarHerramientas: React.FC = () => {
   const [herramientas, setHerramientas] = useState<Herramienta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedHerramienta, setSelectedHerramienta] = useState<Herramienta | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'create' | 'edit' | 'delete'>('create');
   const [editData, setEditData] = useState<Partial<Herramienta>>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
 
   // Datos del formulario para nueva herramienta
   const [nuevaHerramienta, setNuevaHerramienta] = useState({
     nombre: '',
-    cantidadTotal: 0,
-    departamento: ''
+    cantidadTotal: 0
   });
 
-  // Simular carga de datos
+  // Cargar herramientas cuando cambia el departamento seleccionado
   useEffect(() => {
     const cargarHerramientas = async () => {
+      if (!selectedDepartment) {
+        setHerramientas([]);
+        setSelectedDepartmentId(null);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        // Datos de ejemplo
-        const datosEjemplo: Herramienta[] = [
-          {
-            id: 'HERR-001',
-            nombre: 'GPS Garmin',
-            cantidadTotal: 15,
-            disponibles: 8,
-            ocupadas: 7,
-            departamento: 'Amazonas',
-            fechaCreacion: '2024-01-15'
-          },
-          {
-            id: 'HERR-002',
-            nombre: 'Cinta Métrica',
-            cantidadTotal: 25,
-            disponibles: 18,
-            ocupadas: 7,
-            departamento: 'Antioquia',
-            fechaCreacion: '2024-01-20'
-          },
-          {
-            id: 'HERR-003',
-            nombre: 'Clinómetro',
-            cantidadTotal: 10,
-            disponibles: 6,
-            ocupadas: 4,
-            departamento: 'Cundinamarca',
-            fechaCreacion: '2024-02-01'
-          },
-          {
-            id: 'HERR-004',
-            nombre: 'Brujula Silva',
-            cantidadTotal: 20,
-            disponibles: 12,
-            ocupadas: 8,
-            departamento: 'Valle del Cauca',
-            fechaCreacion: '2024-02-10'
-          },
-          {
-            id: 'HERR-005',
-            nombre: 'Tablet de Campo',
-            cantidadTotal: 8,
-            disponibles: 3,
-            ocupadas: 5,
-            departamento: 'Santander',
-            fechaCreacion: '2024-02-15'
-          }
-        ];
+        const token = localStorage.getItem('access_token') || '';
+        const data = await listarHerramientas(selectedDepartment, token);
         
-        setHerramientas(datosEjemplo);
+        // Intentar obtener el ID del departamento de los datos
+        if (data.length > 0) {
+          setSelectedDepartmentId(data[0].departamento_id);
+        } else {
+          // Si no hay herramientas, intentamos inferir el ID por el índice (fallback)
+          // Asumiendo que los IDs de departamentos son secuenciales y alfabéticos 1-32
+          const index = DEPARTAMENTOS_COLOMBIA.indexOf(selectedDepartment);
+          if (index !== -1) {
+            setSelectedDepartmentId(index + 1);
+          }
+        }
+
+        // Mapear respuesta del backend a la interfaz local
+        const mapped: Herramienta[] = data.map((h: HerramientaService) => ({
+          id: h.id.toString(),
+          nombre: h.nombre,
+          cantidadTotal: h.cantidad,
+          disponibles: h.cantidad, // Asumimos que inicialmente todas están disponibles
+          ocupadas: 0, 
+          departamento: selectedDepartment,
+          fechaCreacion: new Date().toISOString()
+        }));
+        
+        setHerramientas(mapped);
       } catch (error) {
         console.error('Error cargando herramientas:', error);
+        setHerramientas([]);
       } finally {
         setLoading(false);
       }
     };
 
     cargarHerramientas();
-  }, []);
+  }, [selectedDepartment]);
 
-  // Filtrar herramientas basado en la búsqueda
-  const filteredHerramientas = herramientas.filter(herramienta =>
-    herramienta.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    herramienta.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    herramienta.departamento.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrar herramientas (actualmente solo muestra todas las del departamento seleccionado)
+  const filteredHerramientas = herramientas;
 
   // Manejar diálogos
   const handleOpenDialog = (herramienta: Herramienta | null, type: 'create' | 'edit' | 'delete') => {
@@ -171,7 +155,7 @@ const GestionarHerramientas: React.FC = () => {
       setEditData({
         nombre: '',
         cantidadTotal: 0,
-        departamento: ''
+        departamento: selectedDepartment || ''
       });
     }
     
@@ -198,20 +182,39 @@ const GestionarHerramientas: React.FC = () => {
   };
 
   // Guardar nueva herramienta
-  const handleGuardarNuevaHerramienta = () => {
-    if (nuevaHerramienta.nombre.trim() && nuevaHerramienta.cantidadTotal > 0 && nuevaHerramienta.departamento.trim()) {
-      const nueva: Herramienta = {
-        id: `HERR-${String(herramientas.length + 1).padStart(3, '0')}`,
-        nombre: nuevaHerramienta.nombre,
-        cantidadTotal: nuevaHerramienta.cantidadTotal,
-        disponibles: nuevaHerramienta.cantidadTotal, // Inicialmente todas disponibles
-        ocupadas: 0,
-        departamento: nuevaHerramienta.departamento,
-        fechaCreacion: new Date().toISOString().split('T')[0]
-      };
-      
-      setHerramientas(prev => [...prev, nueva]);
-      setNuevaHerramienta({ nombre: '', cantidadTotal: 0, departamento: '' });
+  const handleGuardarNuevaHerramienta = async () => {
+    if (nuevaHerramienta.nombre.trim() && nuevaHerramienta.cantidadTotal > 0 && selectedDepartmentId) {
+      try {
+        const token = localStorage.getItem('access_token') || '';
+        await crearHerramienta(
+          selectedDepartmentId,
+          nuevaHerramienta.nombre,
+          nuevaHerramienta.cantidadTotal,
+          token
+        );
+        
+        // Recargar herramientas
+        const data = await listarHerramientas(selectedDepartment!, token);
+        const mapped: Herramienta[] = data.map((h: HerramientaService) => ({
+          id: h.id.toString(),
+          nombre: h.nombre,
+          cantidadTotal: h.cantidad,
+          disponibles: h.cantidad,
+          ocupadas: 0,
+          departamento: selectedDepartment!,
+          fechaCreacion: new Date().toISOString()
+        }));
+        setHerramientas(mapped);
+        
+        setNuevaHerramienta({ nombre: '', cantidadTotal: 0 });
+      } catch (error) {
+        console.error('Error creando herramienta:', error);
+        alert('Error al crear la herramienta');
+      }
+    } else {
+      if (!selectedDepartmentId) {
+        alert('Seleccione un departamento válido primero');
+      }
     }
   };
 
@@ -322,23 +325,22 @@ const GestionarHerramientas: React.FC = () => {
 
             {/* Barra de búsqueda y estadísticas */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-              <TextField
-                placeholder="Buscar por ID, nombre o departamento..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ 
-                  width: 400,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255,255,255,0.9)'
-                  }
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
+              <Autocomplete
+                options={DEPARTAMENTOS_COLOMBIA}
+                value={selectedDepartment}
+                onChange={(event, newValue) => setSelectedDepartment(newValue)}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    label="Seleccionar Departamento" 
+                    variant="outlined"
+                    sx={{ 
+                      width: 400,
+                      backgroundColor: 'rgba(255,255,255,0.9)'
+                    }}
+                  />
+                )}
+                sx={{ width: 400 }}
               />
               
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -384,37 +386,34 @@ const GestionarHerramientas: React.FC = () => {
                 InputProps={{ inputProps: { min: 1 } }}
               />
               
-              <TextField
-                label="Departamento"
-                value={nuevaHerramienta.departamento}
-                onChange={(e) => setNuevaHerramienta(prev => ({ ...prev, departamento: e.target.value }))}
-                sx={{ minWidth: 200, flex: 1 }}
-              />
-              
               <Button
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleGuardarNuevaHerramienta}
-                disabled={!nuevaHerramienta.nombre.trim() || nuevaHerramienta.cantidadTotal <= 0 || !nuevaHerramienta.departamento.trim()}
+                disabled={!nuevaHerramienta.nombre.trim() || nuevaHerramienta.cantidadTotal <= 0 || !selectedDepartmentId}
                 sx={{ minWidth: 120 }}
               >
                 Guardar
               </Button>
             </Box>
+            {!selectedDepartmentId && selectedDepartment && (
+               <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                 No se puede crear herramienta: ID de departamento no identificado.
+               </Typography>
+            )}
           </Card>
 
           {/* Sección 2: Tabla de herramientas */}
           <Card sx={{ p: 3, backgroundColor: 'rgba(248,248,248,0.9)' }}>
             <Typography variant="h5" gutterBottom sx={{ color: '#2E7D32', mb: 3 }}>
-              Lista de Herramientas
+              Lista de Herramientas {selectedDepartment ? `- ${selectedDepartment}` : ''}
             </Typography>
 
             <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255,255,255,0.95)' }}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell><strong>ID</strong></TableCell>
                     <TableCell><strong>Nombre</strong></TableCell>
                     <TableCell align="center"><strong>Cantidad Total</strong></TableCell>
                     <TableCell align="center"><strong>Disponibles</strong></TableCell>
@@ -429,11 +428,6 @@ const GestionarHerramientas: React.FC = () => {
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((herramienta) => (
                     <TableRow key={herramienta.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          {herramienta.id}
-                        </Typography>
-                      </TableCell>
                       <TableCell>
                         <Typography variant="body2">
                           {herramienta.nombre}

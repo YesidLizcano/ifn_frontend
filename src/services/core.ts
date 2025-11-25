@@ -421,3 +421,80 @@ export async function agregarIntegranteBrigada(
     return { success: true };
   }
 }
+
+// Herramientas / Materiales y Equipos
+
+export interface Herramienta {
+  id: number;
+  nombre: string;
+  cantidad: number;
+  departamento_id: number;
+}
+
+export async function listarHerramientas(
+  nombreDepartamento: string,
+  token: string
+): Promise<Herramienta[]> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/materiales_equipos?nombre_departamento=${encodeURIComponent(nombreDepartamento)}`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al listar herramientas';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}
+
+export async function crearHerramienta(
+  departamentoId: number,
+  nombre: string,
+  cantidad: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/materiales_equipos/${departamentoId}`;
+
+  const body = {
+    nombre,
+    cantidad
+  };
+
+  const respuesta = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al crear herramienta';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}
