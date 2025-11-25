@@ -184,6 +184,18 @@ const GestionarHerramientas: React.FC = () => {
     }));
   };
 
+  // Calcular el nuevo total propuesto en edición.
+  // Comportamiento: si el usuario ingresa un número negativo, se interpreta como delta (resta).
+  // Si ingresa un número positivo, se interpreta como el nuevo total absoluto.
+  const computedNewTotal = (() => {
+    if (!selectedHerramienta) return NaN;
+    const v = editData.cantidadTotal;
+    if (v === undefined || v === null || Number.isNaN(Number(v))) return NaN;
+    const n = Number(v);
+    if (n < 0) return selectedHerramienta.cantidadTotal + n; // delta negativo
+    return n; // nuevo total absoluto
+  })();
+
   // Guardar nueva herramienta
   const handleGuardarNuevaHerramienta = async () => {
     if (nuevaHerramienta.nombre.trim() && nuevaHerramienta.cantidadTotal > 0 && selectedDepartmentId) {
@@ -227,46 +239,59 @@ const GestionarHerramientas: React.FC = () => {
     if (selectedHerramienta && dialogType === 'edit') {
       try {
         const token = localStorage.getItem('access_token') || '';
-        
+
         // Determinar el ID del departamento
         let depId = editData.departamento_id;
-        
+
         // Si el departamento cambió, buscar el nuevo ID
         if (editData.departamento && editData.departamento !== selectedHerramienta.departamento) {
-             const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento);
-             if (index !== -1) depId = index + 1;
+          const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento);
+          if (index !== -1) depId = index + 1;
         }
-        
+
         // Fallback si no tenemos ID
         if (!depId) {
-             const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento || selectedHerramienta.departamento);
-             if (index !== -1) depId = index + 1;
+          const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento || selectedHerramienta.departamento);
+          if (index !== -1) depId = index + 1;
         }
 
         if (!depId) {
-            alert("No se pudo determinar el ID del departamento");
-            return;
+          alert("No se pudo determinar el ID del departamento");
+          return;
+        }
+
+        // Calcular el nuevo total real usando computedNewTotal (si es NaN, fallback al valor actual)
+        const newTotal = Number.isNaN(computedNewTotal) ? (editData.cantidadTotal ?? selectedHerramienta.cantidadTotal) : computedNewTotal;
+
+        if (newTotal < (selectedHerramienta.ocupadas || 0)) {
+          alert('No se puede reducir la cantidad por debajo de las unidades ocupadas');
+          return;
+        }
+
+        if (newTotal < 0) {
+          alert('La cantidad total no puede ser negativa');
+          return;
         }
 
         await actualizarHerramienta(
-            parseInt(selectedHerramienta.id),
-            editData.nombre || selectedHerramienta.nombre,
-            editData.cantidadTotal || selectedHerramienta.cantidadTotal,
-            depId,
-            token
+          parseInt(selectedHerramienta.id),
+          editData.nombre || selectedHerramienta.nombre,
+          newTotal,
+          depId,
+          token
         );
 
         // Actualizar estado local
         const nuevasOcupadas = selectedHerramienta.ocupadas;
-        const nuevosDisponibles = (editData.cantidadTotal || 0) - nuevasOcupadas;
-        
+        const nuevosDisponibles = newTotal - nuevasOcupadas;
+
         setHerramientas(prev => 
           prev.map(herramienta => 
             herramienta.id === selectedHerramienta.id 
               ? { 
                   ...herramienta,
                   nombre: editData.nombre || '',
-                  cantidadTotal: editData.cantidadTotal || 0,
+                  cantidadTotal: newTotal,
                   disponibles: nuevosDisponibles >= 0 ? nuevosDisponibles : 0,
                   departamento: editData.departamento || '',
                   departamento_id: depId!
@@ -275,8 +300,8 @@ const GestionarHerramientas: React.FC = () => {
           )
         );
       } catch (error) {
-          console.error('Error actualizando herramienta:', error);
-          alert('Error al actualizar la herramienta');
+        console.error('Error actualizando herramienta:', error);
+        alert('Error al actualizar la herramienta');
       }
     }
     handleCloseDialog();
@@ -592,12 +617,13 @@ const GestionarHerramientas: React.FC = () => {
                 
                 <TextField
                   fullWidth
-                  label="Cantidad Total"
+                  label="Cantidad (usa negativo para disminuir)"
                   type="number"
-                  value={editData.cantidadTotal || 0}
-                  onChange={(e) => handleEditChange('cantidadTotal', parseInt(e.target.value) || 0)}
+                  value={editData.cantidadTotal ?? ''}
+                  onChange={(e) => handleEditChange('cantidadTotal', e.target.value === '' ? undefined : parseInt(e.target.value))}
                   sx={{ mb: 2 }}
-                  InputProps={{ inputProps: { min: 1 } }}
+                  InputProps={{ inputProps: {} }}
+                  helperText={selectedHerramienta ? `Actual: ${selectedHerramienta.cantidadTotal}. Escribe -n para restar n unidades, o un número positivo para establecer el total.` : ''}
                 />
                 
                 <Autocomplete
@@ -613,16 +639,16 @@ const GestionarHerramientas: React.FC = () => {
                   )}
                 />
 
-                {selectedHerramienta && (
-                  <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Nota:</strong> Al modificar la cantidad total, las herramientas disponibles se ajustarán automáticamente.
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                      Actualmente hay {selectedHerramienta.ocupadas} herramientas ocupadas.
-                    </Typography>
-                  </Box>
-                )}
+                    {selectedHerramienta && (
+                      <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          <strong>Nota:</strong> Puedes usar un valor negativo en "Cantidad" para disminuir el total. El sistema no permitirá que el total quede por debajo de las unidades ocupadas.
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                          Actualmente hay {selectedHerramienta.ocupadas} herramientas ocupadas. Total actual: {selectedHerramienta.cantidadTotal}.
+                        </Typography>
+                      </Box>
+                    )}
               </Box>
             )}
           </DialogContent>
@@ -643,12 +669,13 @@ const GestionarHerramientas: React.FC = () => {
                 color="primary"
                 startIcon={<SaveIcon />}
                 onClick={handleSave}
-                disabled={
-                  !editData.nombre?.trim() ||
-                  !editData.cantidadTotal ||
-                  editData.cantidadTotal <= 0 ||
-                  !editData.departamento?.trim()
-                }
+                disabled={(() => {
+                  const nombreOk = !!editData.nombre?.trim();
+                  const departamentoOk = !!editData.departamento?.trim();
+                  const cantidadProvided = editData.cantidadTotal !== undefined && editData.cantidadTotal !== null && !Number.isNaN(Number(editData.cantidadTotal));
+                  const cantidadValida = !Number.isNaN(computedNewTotal) && (selectedHerramienta ? computedNewTotal >= selectedHerramienta.ocupadas : computedNewTotal >= 0) && computedNewTotal >= 0;
+                  return !(nombreOk && departamentoOk && cantidadProvided && cantidadValida);
+                })()}
               >
                 Guardar Cambios
               </Button>
