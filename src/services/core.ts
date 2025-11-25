@@ -213,7 +213,11 @@ export async function asignarBrigada(
     let detalle = 'Error al asignar la brigada';
     try {
       const data = await respuesta.json();
-      if (data?.message) detalle = data.message;
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
     } catch (_) {}
     throw new Error(detalle);
   }
@@ -241,7 +245,11 @@ export async function eliminarConglomerado(
     let detalle = 'Error al eliminar el conglomerado';
     try {
       const data = await respuesta.json();
-      if (data?.message) detalle = data.message;
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
     } catch (_) {}
     throw new Error(detalle);
   }
