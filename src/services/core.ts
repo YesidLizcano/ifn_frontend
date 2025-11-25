@@ -344,3 +344,77 @@ export async function listarIntegrantesBrigada(
 
   return await respuesta.json();
 }
+
+// Eliminar integrante de brigada
+export async function eliminarIntegranteBrigada(
+  brigadaId: number,
+  integranteId: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/brigadas/${brigadaId}/integrantes/${integranteId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al eliminar integrante de la brigada';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  try {
+    return await respuesta.json();
+  } catch (e) {
+    return { success: true };
+  }
+}
+
+// Agregar integrante a brigada
+export async function agregarIntegranteBrigada(
+  brigadaId: number,
+  integranteId: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/brigadas/${brigadaId}/integrantes/${integranteId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al agregar integrante a la brigada';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  try {
+    return await respuesta.json();
+  } catch (e) {
+    return { success: true };
+  }
+}

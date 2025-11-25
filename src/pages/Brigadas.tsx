@@ -20,9 +20,21 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  IconButton
 } from '@mui/material';
-import { listarBrigadas, RawBrigadaResponse, listarIntegrantesBrigada, BrigadaIntegranteDetalle } from '../services/core';
+import { 
+  listarBrigadas, 
+  RawBrigadaResponse, 
+  listarIntegrantesBrigada, 
+  BrigadaIntegranteDetalle, 
+  eliminarIntegranteBrigada,
+  listarConglomerados,
+  listarIntegrantesPorRegion,
+  agregarIntegranteBrigada,
+  Integrante,
+  RawConglomeradoResponse
+} from '../services/core';
 
 interface Brigada {
   id: number;
@@ -47,6 +59,18 @@ const SearchIcon = () => (
 const PeopleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+  </svg>
+);
+
+const DeleteIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+  </svg>
+);
+
+const ReplaceIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
   </svg>
 );
 
@@ -102,15 +126,29 @@ const GestionarBrigadas: React.FC = () => {
   const [selectedBrigadaMembers, setSelectedBrigadaMembers] = useState<BrigadaIntegranteDetalle[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedBrigadaIdForDialog, setSelectedBrigadaIdForDialog] = useState<number | null>(null);
+  
+  // Nuevos estados para agregar integrantes
+  const [conglomerados, setConglomerados] = useState<RawConglomeradoResponse[]>([]);
+  const [availableMembers, setAvailableMembers] = useState<Integrante[]>([]);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberToReplace, setMemberToReplace] = useState<BrigadaIntegranteDetalle | null>(null);
 
   useEffect(() => {
-    const cargarBrigadas = async () => {
+    const cargarDatos = async () => {
       setLoading(true);
       setError(null);
       try {
         const token = localStorage.getItem('access_token') || '';
-        const datos = await listarBrigadas(token);
-        const mapped: Brigada[] = datos.map((brigada: RawBrigadaResponse) => ({
+        
+        // Cargar brigadas y conglomerados en paralelo
+        const [brigadasData, conglomeradosData] = await Promise.all([
+          listarBrigadas(token),
+          listarConglomerados(token)
+        ]);
+
+        setConglomerados(conglomeradosData);
+
+        const mapped: Brigada[] = brigadasData.map((brigada: RawBrigadaResponse) => ({
           id: brigada.id,
           fechaCreacion: brigada.fechaCreacion ?? '',
           estado: brigada.estado ?? 'Desconocido',
@@ -123,14 +161,14 @@ const GestionarBrigadas: React.FC = () => {
         }));
         setBrigadas(mapped);
       } catch (err) {
-        console.error('Error cargando brigadas:', err);
+        console.error('Error cargando datos:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
         setLoading(false);
       }
     };
 
-    cargarBrigadas();
+    cargarDatos();
   }, []);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -176,6 +214,154 @@ const GestionarBrigadas: React.FC = () => {
     setMembersDialogOpen(false);
     setSelectedBrigadaMembers([]);
     setSelectedBrigadaIdForDialog(null);
+    setShowAddMember(false);
+    setAvailableMembers([]);
+    setMemberToReplace(null);
+  };
+
+  const handleDeleteMember = async (integranteId: number) => {
+    if (!selectedBrigadaIdForDialog) return;
+    if (!window.confirm('¿Está seguro que desea eliminar este integrante de la brigada?')) return;
+
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, integranteId, token);
+      
+      // Actualizar la lista de integrantes localmente
+      setSelectedBrigadaMembers(prev => prev.filter(m => m.id_integrante !== integranteId));
+      alert('Integrante eliminado con éxito');
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      const msg = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`Error al eliminar integrante: ${msg}`);
+    }
+  };
+
+  const handleLoadAvailableMembers = async () => {
+    if (!selectedBrigadaIdForDialog) return;
+    const brigada = brigadas.find(b => b.id === selectedBrigadaIdForDialog);
+    if (!brigada) return;
+
+    const conglomerado = conglomerados.find(c => c.id === brigada.conglomerado_id);
+    
+    if (!conglomerado) {
+      // Fallback: try to use municipio if department not found, or alert
+      // But listarIntegrantesPorRegion expects department.
+      // Maybe we can try to guess or just alert.
+      alert('No se encontró información del conglomerado para determinar la región (departamento).');
+      return;
+    }
+
+    setLoadingMembers(true);
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      const members = await listarIntegrantesPorRegion(
+        conglomerado.departamento_nombre,
+        brigada.fechaInicio,
+        brigada.fechaFinAprox,
+        token
+      );
+      
+      // Filter out members already in the brigade
+      const currentMemberIds = new Set(selectedBrigadaMembers.map(m => m.id_integrante));
+      const available = members.filter(m => !currentMemberIds.has(m.id));
+      
+      setAvailableMembers(available);
+      setShowAddMember(true);
+    } catch (error) {
+      console.error('Error loading available members:', error);
+      alert('Error al cargar integrantes disponibles');
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  const handleAddMember = async (integranteId: number) => {
+    if (!selectedBrigadaIdForDialog) return;
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      await agregarIntegranteBrigada(selectedBrigadaIdForDialog, integranteId, token);
+      
+      alert('Integrante agregado con éxito');
+      
+      // Refresh members list
+      const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
+      setSelectedBrigadaMembers(updatedMembers);
+      
+      // Remove from available list
+      setAvailableMembers(prev => prev.filter(m => m.id !== integranteId));
+    } catch (error) {
+      console.error('Error adding member:', error);
+      alert('Error al agregar integrante');
+    }
+  };
+
+  const handleStartReplace = async (member: BrigadaIntegranteDetalle) => {
+    if (!selectedBrigadaIdForDialog) return;
+    const brigada = brigadas.find(b => b.id === selectedBrigadaIdForDialog);
+    if (!brigada) return;
+    const conglomerado = conglomerados.find(c => c.id === brigada.conglomerado_id);
+    if (!conglomerado) {
+        alert('No se encontró información del conglomerado.');
+        return;
+    }
+
+    setMemberToReplace(member);
+    setLoadingMembers(true);
+    try {
+        const token = localStorage.getItem('access_token') || '';
+        const members = await listarIntegrantesPorRegion(
+            conglomerado.departamento_nombre,
+            brigada.fechaInicio,
+            brigada.fechaFinAprox,
+            token
+        );
+        
+        // Filter: same role, not currently in brigade
+        const currentMemberIds = new Set(selectedBrigadaMembers.map(m => m.id_integrante));
+        const available = members.filter(m => 
+            !currentMemberIds.has(m.id) && 
+            m.rol === member.rol // Ensure same role
+        );
+        
+        setAvailableMembers(available);
+    } catch (error) {
+        console.error('Error loading replacements:', error);
+        alert('Error al cargar reemplazos disponibles');
+        setMemberToReplace(null);
+    } finally {
+        setLoadingMembers(false);
+    }
+  };
+
+  const handleReplaceMember = async (newMemberId: number) => {
+    if (!selectedBrigadaIdForDialog || !memberToReplace) return;
+    
+    if (!window.confirm(`¿Confirmar reemplazo de ${memberToReplace.nombreCompleto}?`)) return;
+
+    try {
+        const token = localStorage.getItem('access_token') || '';
+        
+        // 1. Add new member
+        await agregarIntegranteBrigada(selectedBrigadaIdForDialog, newMemberId, token);
+        
+        // 2. Remove old member
+        await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, memberToReplace.id_integrante, token);
+        
+        alert('Reemplazo realizado con éxito');
+        
+        // Refresh
+        const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
+        setSelectedBrigadaMembers(updatedMembers);
+        
+        // Reset UI
+        setMemberToReplace(null);
+        setAvailableMembers([]);
+
+    } catch (error) {
+        console.error('Error replacing member:', error);
+        alert('Error al realizar el reemplazo');
+    }
   };
 
   if (loading) {
@@ -349,24 +535,6 @@ const GestionarBrigadas: React.FC = () => {
                       </Button>
                     </Box>
                   </Box>
-
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      mt: 'auto',
-                      borderColor: getEstadoBorderColor(brigada.estado),
-                      color: getEstadoBorderColor(brigada.estado),
-                      '&:hover': {
-                        backgroundColor: getEstadoBorderColor(brigada.estado),
-                        color: '#fff'
-                      }
-                    }}
-                    startIcon={<PeopleIcon />}
-                    onClick={() => handleViewMembers(brigada.id, brigada.municipio || '')}
-                  >
-                    Ver integrantes
-                  </Button>
                 </Paper>
               </Box>
             ))}
@@ -394,14 +562,82 @@ const GestionarBrigadas: React.FC = () => {
             }
           }}
         >
-          <DialogTitle>
-            Integrantes de la Brigada {selectedBrigadaIdForDialog ? formatBrigadaId(brigadas.find(b => b.id === selectedBrigadaIdForDialog)?.municipio || '') : ''}
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>
+              {memberToReplace ? `Reemplazar a ${memberToReplace.nombreCompleto}` : 
+               showAddMember ? 'Agregar Integrante a ' : 'Integrantes de la Brigada '} 
+              {selectedBrigadaIdForDialog && !memberToReplace ? formatBrigadaId(brigadas.find(b => b.id === selectedBrigadaIdForDialog)?.municipio || '') : ''}
+            </span>
+            <Box>
+              {!showAddMember && !memberToReplace && (
+                <Button 
+                  variant="contained" 
+                  size="small" 
+                  onClick={handleLoadAvailableMembers}
+                  sx={{ mr: 1 }}
+                >
+                  Agregar Integrante
+                </Button>
+              )}
+              {(showAddMember || memberToReplace) && (
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => {
+                    setShowAddMember(false);
+                    setMemberToReplace(null);
+                    setAvailableMembers([]);
+                  }}
+                >
+                  Volver a Lista
+                </Button>
+              )}
+            </Box>
           </DialogTitle>
           <DialogContent>
             {loadingMembers ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                 <CircularProgress />
               </Box>
+            ) : (showAddMember || memberToReplace) ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: 'rgba(0,0,0,0.04)' }}>
+                      <TableCell><strong>Nombre</strong></TableCell>
+                      <TableCell><strong>Rol</strong></TableCell>
+                      <TableCell><strong>Acción</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {availableMembers.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>{member.nombreCompleto || member.nombre}</TableCell>
+                        <TableCell>{member.rol}</TableCell>
+                        <TableCell>
+                          <Button 
+                            size="small" 
+                            variant="contained" 
+                            color={memberToReplace ? "warning" : "primary"}
+                            onClick={() => memberToReplace ? handleReplaceMember(member.id) : handleAddMember(member.id)}
+                          >
+                            {memberToReplace ? "Reemplazar" : "Agregar"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {availableMembers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">
+                          {memberToReplace 
+                            ? `No hay reemplazos disponibles para el rol ${memberToReplace.rol}.` 
+                            : "No hay integrantes disponibles en esta región y fechas."}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             ) : (
               <TableContainer component={Paper} variant="outlined">
                 <Table size="small">
@@ -412,6 +648,7 @@ const GestionarBrigadas: React.FC = () => {
                       <TableCell><strong>Teléfono</strong></TableCell>
                       <TableCell><strong>Email</strong></TableCell>
                       <TableCell><strong>Estado</strong></TableCell>
+                      <TableCell><strong>Acciones</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -435,11 +672,30 @@ const GestionarBrigadas: React.FC = () => {
                             color={member.estado === 'ACTIVO_DISPONIBLE' ? 'success' : 'default'}
                           />
                         </TableCell>
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            onClick={() => handleStartReplace(member)}
+                            title="Reemplazar integrante"
+                            sx={{ mr: 1 }}
+                          >
+                            <ReplaceIcon />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteMember(member.id_integrante)}
+                            title="Eliminar integrante"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {selectedBrigadaMembers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
+                        <TableCell colSpan={6} align="center">
                           No se encontraron detalles de integrantes.
                         </TableCell>
                       </TableRow>
