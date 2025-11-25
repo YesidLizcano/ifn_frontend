@@ -70,7 +70,7 @@ const GestionarConglomerados: React.FC = () => {
   const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign' | 'assignDates'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
   type BrigadaMember = Integrante | null;
-  const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: BrigadaMember; auxiliarTecnicos: BrigadaMember[]; botanicos: BrigadaMember[]; coinvestigadores: BrigadaMember[] }>({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null] });
+  const [brigadaData, setBrigadaData] = useState<{ jefeBrigada: BrigadaMember; auxiliarTecnicos: BrigadaMember[]; botanicos: BrigadaMember[]; coinvestigadores: BrigadaMember[] }>({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
   const [integrantesByRole, setIntegrantesByRole] = useState<Record<string, Integrante[]>>({});
   const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
 
@@ -182,7 +182,9 @@ const GestionarConglomerados: React.FC = () => {
   const removeArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores', index: number) => {
     setBrigadaData(prev => {
       const arr = [...(prev as any)[field]];
-      if (arr.length <= 1) return prev; // mantener al menos 1 campo vacío
+      // mantener al menos 1 campo para auxiliares/botánicos, y 2 para coinvestigadores
+      const min = field === 'coinvestigadores' ? 2 : 1;
+      if (arr.length <= min) return prev; // mantener al menos min campos vacíos
       arr.splice(index, 1);
       return { ...(prev as any), [field]: arr };
     });
@@ -208,7 +210,7 @@ const GestionarConglomerados: React.FC = () => {
     setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({
       ...c,
       estado: 'asignado',
-      observaciones: `Jefe: ${brigadaData.jefeBrigada?.nombreCompleto || brigadaData.jefeBrigada?.nombre || 'N/A'}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}`
+      observaciones: `Jefe: ${brigadaData.jefeBrigada?.nombreCompleto || brigadaData.jefeBrigada?.nombre || 'N/A'}; Auxiliares: ${brigadaData.auxiliarTecnicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Botánicos: ${brigadaData.botanicos.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}; Coinvestigadores: ${brigadaData.coinvestigadores.filter(Boolean).map(x => x?.nombreCompleto || x?.nombre).join(', ') || 'N/A'}`
     }) : c));
 
     handleCloseDialog();
@@ -786,7 +788,8 @@ const GestionarConglomerados: React.FC = () => {
                   disabled={(
                     !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id && brigadaData.jefeBrigada.id !== -1) ||
                     brigadaData.auxiliarTecnicos.filter(a => a && a.id && a.id !== -1).length < 1 ||
-                    brigadaData.botanicos.filter(b => b && b.id && b.id !== -1).length < 1
+                    brigadaData.botanicos.filter(b => b && b.id && b.id !== -1).length < 1 ||
+                    brigadaData.coinvestigadores.filter(c => c && c.id && c.id !== -1).length < 2
                   )}
                 >
                   Asignar Brigada
