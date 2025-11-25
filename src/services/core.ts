@@ -302,3 +302,45 @@ export async function listarBrigadas(token: string): Promise<RawBrigadaResponse[
 
   return await respuesta.json();
 }
+
+export interface BrigadaIntegranteDetalle {
+  id_brigada: number;
+  id_integrante: number;
+  rol: string;
+  nombreCompleto: string;
+  telefono: string;
+  email: string;
+  estado: string;
+}
+
+export async function listarIntegrantesBrigada(
+  brigadaId: number,
+  token: string
+): Promise<BrigadaIntegranteDetalle[]> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/integrantes/brigada/${brigadaId}`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al listar integrantes de la brigada';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}

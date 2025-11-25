@@ -9,9 +9,20 @@ import {
   InputAdornment,
   Alert,
   CircularProgress,
-  Paper
+  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
-import { listarBrigadas, RawBrigadaResponse } from '../services/core';
+import { listarBrigadas, RawBrigadaResponse, listarIntegrantesBrigada, BrigadaIntegranteDetalle } from '../services/core';
 
 interface Brigada {
   id: number;
@@ -30,6 +41,12 @@ type EstadoChipColor = 'default' | 'primary' | 'success' | 'warning' | 'error';
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+  </svg>
+);
+
+const PeopleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
   </svg>
 );
 
@@ -81,6 +98,10 @@ const GestionarBrigadas: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+  const [selectedBrigadaMembers, setSelectedBrigadaMembers] = useState<BrigadaIntegranteDetalle[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [selectedBrigadaIdForDialog, setSelectedBrigadaIdForDialog] = useState<number | null>(null);
 
   useEffect(() => {
     const cargarBrigadas = async () => {
@@ -133,6 +154,29 @@ const GestionarBrigadas: React.FC = () => {
     });
     return resumen;
   }, [brigadas]);
+
+  const handleViewMembers = async (brigadaId: number, municipio: string) => {
+    setSelectedBrigadaIdForDialog(brigadaId);
+    setLoadingMembers(true);
+    setMembersDialogOpen(true);
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      const members = await listarIntegrantesBrigada(brigadaId, token);
+      setSelectedBrigadaMembers(members);
+    } catch (error) {
+      console.error('Error loading members:', error);
+      alert('Error al cargar los integrantes de la brigada');
+      setMembersDialogOpen(false);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  const handleCloseMembersDialog = () => {
+    setMembersDialogOpen(false);
+    setSelectedBrigadaMembers([]);
+    setSelectedBrigadaIdForDialog(null);
+  };
 
   if (loading) {
     return (
@@ -291,11 +335,38 @@ const GestionarBrigadas: React.FC = () => {
                       <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
                         Integrantes
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
                         {brigada.integrantes}
                       </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<PeopleIcon />}
+                        onClick={() => handleViewMembers(brigada.id, brigada.municipio || '')}
+                        fullWidth
+                      >
+                        Ver Integrantes
+                      </Button>
                     </Box>
                   </Box>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      mt: 'auto',
+                      borderColor: getEstadoBorderColor(brigada.estado),
+                      color: getEstadoBorderColor(brigada.estado),
+                      '&:hover': {
+                        backgroundColor: getEstadoBorderColor(brigada.estado),
+                        color: '#fff'
+                      }
+                    }}
+                    startIcon={<PeopleIcon />}
+                    onClick={() => handleViewMembers(brigada.id, brigada.municipio || '')}
+                  >
+                    Ver integrantes
+                  </Button>
                 </Paper>
               </Box>
             ))}
@@ -309,6 +380,79 @@ const GestionarBrigadas: React.FC = () => {
             </Box>
           )}
         </Card>
+
+        {/* Diálogo de Integrantes */}
+        <Dialog
+          open={membersDialogOpen}
+          onClose={handleCloseMembersDialog}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(10px)'
+            }
+          }}
+        >
+          <DialogTitle>
+            Integrantes de la Brigada {selectedBrigadaIdForDialog ? formatBrigadaId(brigadas.find(b => b.id === selectedBrigadaIdForDialog)?.municipio || '') : ''}
+          </DialogTitle>
+          <DialogContent>
+            {loadingMembers ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: 'rgba(0,0,0,0.04)' }}>
+                      <TableCell><strong>Rol</strong></TableCell>
+                      <TableCell><strong>Nombre Completo</strong></TableCell>
+                      <TableCell><strong>Teléfono</strong></TableCell>
+                      <TableCell><strong>Email</strong></TableCell>
+                      <TableCell><strong>Estado</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedBrigadaMembers.map((member) => (
+                      <TableRow key={member.id_integrante}>
+                        <TableCell>
+                          <Chip 
+                            label={member.rol.replace('_', ' ')} 
+                            size="small" 
+                            color={member.rol === 'JEFE_BRIGADA' ? 'primary' : 'default'}
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>{member.nombreCompleto}</TableCell>
+                        <TableCell>{member.telefono}</TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={member.estado.replace('_', ' ')} 
+                            size="small" 
+                            color={member.estado === 'ACTIVO_DISPONIBLE' ? 'success' : 'default'}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {selectedBrigadaMembers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          No se encontraron detalles de integrantes.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseMembersDialog}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );
