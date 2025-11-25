@@ -767,6 +767,29 @@ const GestionarConglomerados: React.FC = () => {
           </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Cancelar</Button>
+              {dialogType === 'assignDates' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSaveDates}
+                  disabled={
+                    !editData.fechaInicio || !String(editData.fechaInicio).trim() ||
+                    !editData.fechaFinAprox || !String(editData.fechaFinAprox).trim() ||
+                    (() => {
+                      const inicio = String(editData.fechaInicio || '');
+                      const fin = String(editData.fechaFinAprox || '');
+                      if (!inicio || !fin) return true;
+                      const dInicio = new Date(inicio);
+                      const dFin = new Date(fin);
+                      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return true;
+                      return (dFin.getTime() - dInicio.getTime()) < (24 * 60 * 60 * 1000);
+                    })()
+                  }
+                >
+                  Siguiente
+                </Button>
+              )}
               {dialogType === 'edit' && (
                 <Button 
                   variant="contained" 
