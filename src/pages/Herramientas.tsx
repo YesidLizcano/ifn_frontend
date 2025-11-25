@@ -256,11 +256,19 @@ const GestionarHerramientas: React.FC = () => {
           ? Number(editData.cantidadTotal)
           : selectedHerramienta.cantidadTotal;
 
+        // Log payload to help debug 400 responses from backend
+        const payloadToSend = {
+          nombre: editData.nombre || selectedHerramienta.nombre,
+          cantidad: payloadCantidad,
+          departamento_id: depId
+        };
+        console.debug('PATCH /materiales_equipos payload:', payloadToSend);
+
         await actualizarHerramienta(
           parseInt(selectedHerramienta.id),
-          editData.nombre || selectedHerramienta.nombre,
-          payloadCantidad,
-          depId,
+          payloadToSend.nombre,
+          payloadToSend.cantidad,
+          payloadToSend.departamento_id,
           token
         );
 
@@ -285,7 +293,9 @@ const GestionarHerramientas: React.FC = () => {
         );
       } catch (error) {
         console.error('Error actualizando herramienta:', error);
-        alert('Error al actualizar la herramienta');
+        const msg = (error as any)?.message || JSON.stringify(error) || 'Error al actualizar la herramienta';
+        // Mostrar detalle proveniente del backend cuando sea posible
+        alert(`Error al actualizar la herramienta: ${msg}`);
       }
     }
     handleCloseDialog();
