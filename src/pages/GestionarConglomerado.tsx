@@ -656,25 +656,24 @@ const GestionarConglomerados: React.FC = () => {
                 {dialogType === 'assign' && (
                   <Box sx={{ mt: 2 }}>
                     {/* Jefe de brigada: select si hay resultados, fallback a texto */}
-                    {/* Jefe de brigada: Autocomplete de selección única */}
-                    {integrantesByRole['jefeBrigada'] && integrantesByRole['jefeBrigada'].length > 0 ? (
-                      <Autocomplete
-                        options={integrantesByRole['jefeBrigada']}
-                        getOptionLabel={(o: any) => o.nombreCompleto || o.nombre}
-                        value={brigadaData.jefeBrigada}
-                        onChange={(_, v) => setBrigadaData(prev => ({ ...prev, jefeBrigada: v }))}
-                        isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                        renderInput={renderWithLoading('Jefe de Brigada')}
-                      />
-                    ) : (
-                      <TextField
-                        fullWidth
-                        label="Jefe de Brigada"
-                        value={brigadaData.jefeBrigada ? (brigadaData.jefeBrigada.nombreCompleto || brigadaData.jefeBrigada.nombre) : ''}
-                        onChange={(e) => setBrigadaData(prev => ({ ...prev, jefeBrigada: { id: -1, nombreCompleto: e.target.value } }))}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
+                    {/* Jefe de brigada: Autocomplete siempre visible, permite texto libre con freeSolo */}
+                    <Autocomplete
+                      options={optionsFor('jefeBrigada', brigadaData.jefeBrigada)}
+                      getOptionLabel={(o: any) => (typeof o === 'string' ? o : (o?.nombreCompleto || o?.nombre || ''))}
+                      value={brigadaData.jefeBrigada}
+                      freeSolo
+                      onChange={(_, v) => {
+                        if (!v) {
+                          setBrigadaData(prev => ({ ...prev, jefeBrigada: null }));
+                        } else if (typeof v === 'string') {
+                          setBrigadaData(prev => ({ ...prev, jefeBrigada: { id: -1, nombreCompleto: v } }));
+                        } else {
+                          setBrigadaData(prev => ({ ...prev, jefeBrigada: v }));
+                        }
+                      }}
+                      isOptionEqualToValue={(option, value) => (option?.id && value?.id) ? option.id === value.id : String(option) === String(value)}
+                      renderInput={renderWithLoading('Jefe de Brigada')}
+                    />
 
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" sx={{ mb: 1 }}>Auxiliares Técnicos</Typography>
