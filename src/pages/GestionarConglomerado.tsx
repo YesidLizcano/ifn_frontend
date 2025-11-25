@@ -146,15 +146,15 @@ const GestionarConglomerados: React.FC = () => {
       const token = localStorage.getItem('access_token') || '';
       setLoadingIntegrantes(true);
       try {
-        const inicio = selectedConglomerado.fechaInicio || '';
-        const fin = selectedConglomerado.fechaFinAprox || '';
+        // Usar las fechas ingresadas por el usuario en el diálogo si existen en editData;
+        // no persistimos en el array `conglomerados` hasta que la asignación sea confirmada.
+        const inicio = (editData.fechaInicio as string) || selectedConglomerado.fechaInicio || '';
+        const fin = (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox || '';
 
-        // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
-        // Los roles deben llamarse exactamente: jefeBrigada, botanico, auxiliar, coinvestigador
         const rolesToFetch = ['auxiliar', 'botanico', 'jefeBrigada', 'coinvestigador'];
         const results: Record<string, Integrante[]> = {};
         try {
-          // Ahora el endpoint devuelve todos los integrantes para la región/fechas.
+          // El endpoint devuelve todos los integrantes para la región/fechas.
           // Filtraremos en el cliente por las flags booleanas: item['auxiliar'], item['botanico'], etc.
           const all = await listarIntegrantesPorRegion(departamentoNombre, inicio, fin, token);
           for (const rol of rolesToFetch) {
@@ -172,7 +172,7 @@ const GestionarConglomerados: React.FC = () => {
     };
 
     cargarIntegrantes();
-  }, [dialogType, selectedConglomerado]);
+  }, [dialogType, selectedConglomerado, editData]);
 
   // Helpers para manejar arrays dinámicos en brigadaData
   const addArrayItem = (field: 'auxiliarTecnicos' | 'botanicos' | 'coinvestigadores') => {
@@ -240,14 +240,8 @@ const GestionarConglomerados: React.FC = () => {
       return;
     }
 
-    // Actualizar conglomerado con las fechas
-    setConglomerados(prev => prev.map(c => c.id === selectedConglomerado.id ? ({ ...c, fechaInicio: inicio, fechaFinAprox: fin || '' }) : c));
-
-    // También actualizar el objeto seleccionado para que los efectos que dependen
-    // de `selectedConglomerado` (por ejemplo, la carga de integrantes) reciban las fechas
-    setSelectedConglomerado(prev => prev ? ({ ...prev, fechaInicio: inicio || '', fechaFinAprox: fin || '' }) : prev);
-
-    // Cambiar al diálogo de asignación (sin cerrar)
+    // Cambiar al diálogo de asignación (sin cerrar).
+    // No persistimos las fechas en `conglomerados` hasta la asignación final.
     setDialogType('assign');
   };
 
@@ -781,29 +775,8 @@ const GestionarConglomerados: React.FC = () => {
                   Guardar
                 </Button>
               )}
-              {dialogType === 'assignDates' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<SaveIcon />}
-                  onClick={handleSaveDates}
-                  disabled={
-                    !editData.fechaInicio || !String(editData.fechaInicio).trim() ||
-                    !editData.fechaFinAprox || !String(editData.fechaFinAprox).trim() ||
-                    (() => {
-                      const inicio = String(editData.fechaInicio || '');
-                      const fin = String(editData.fechaFinAprox || '');
-                      if (!inicio || !fin) return true;
-                      const dInicio = new Date(inicio);
-                      const dFin = new Date(fin);
-                      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return true;
-                      return (dFin.getTime() - dInicio.getTime()) < (24 * 60 * 60 * 1000);
-                    })()
-                  }
-                >
-                  Guardar Fechas
-                </Button>
-              )}
+              {/* El botón 'Guardar Fechas' se elimina: se usa el botón 'Siguiente' dentro del contenido del diálogo.
+                  Las fechas no se persisten en el array `conglomerados` hasta que la asignación sea confirmada. */}
               {dialogType === 'assign' && (
                 <Button
                   variant="contained"
