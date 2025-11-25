@@ -375,6 +375,7 @@ const GestionarHerramientas: React.FC = () => {
                 value={nuevaHerramienta.nombre}
                 onChange={(e) => setNuevaHerramienta(prev => ({ ...prev, nombre: e.target.value }))}
                 sx={{ minWidth: 200, flex: 1 }}
+                disabled={!selectedDepartment}
               />
               
               <TextField
@@ -384,6 +385,7 @@ const GestionarHerramientas: React.FC = () => {
                 onChange={(e) => setNuevaHerramienta(prev => ({ ...prev, cantidadTotal: parseInt(e.target.value) || 0 }))}
                 sx={{ minWidth: 120 }}
                 InputProps={{ inputProps: { min: 1 } }}
+                disabled={!selectedDepartment}
               />
               
               <Button
