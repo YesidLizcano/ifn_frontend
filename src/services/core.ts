@@ -269,6 +269,9 @@ export interface RawBrigadaResponse {
   conglomerado_id: number;
   id: number;
   integrantes: string;
+  municipio: string;
+  fechaInicio: string;
+  fechaFinAprox: string;
 }
 
 export async function listarBrigadas(token: string): Promise<RawBrigadaResponse[]> {

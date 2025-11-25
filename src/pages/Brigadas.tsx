@@ -22,6 +22,7 @@ interface Brigada {
   integrantes: string;
   conglomeradoNombre?: string;
   conglomerado_id?: number;
+  municipio?: string;
 }
 
 type EstadoChipColor = 'default' | 'primary' | 'success' | 'warning' | 'error';
@@ -32,7 +33,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-const formatBrigadaId = (id: number) => `BRG-${String(id).padStart(3, '0')}`;
+const formatBrigadaId = (municipio: string) => `BRG-${municipio}`;
 
 const formatFecha = (fecha: string) => {
   if (!fecha) return 'N/A';
@@ -92,11 +93,12 @@ const GestionarBrigadas: React.FC = () => {
           id: brigada.id,
           fechaCreacion: brigada.fechaCreacion ?? '',
           estado: brigada.estado ?? 'Desconocido',
-          fechaInicio: '', // No viene en el endpoint actual
-          fechaFinAprox: '', // No viene en el endpoint actual
+          fechaInicio: brigada.fechaInicio ?? '',
+          fechaFinAprox: brigada.fechaFinAprox ?? '',
           integrantes: brigada.integrantes || 'Sin información',
           conglomerado_id: brigada.conglomerado_id,
-          conglomeradoNombre: `Conglomerado ${brigada.conglomerado_id}` // Placeholder hasta tener nombre real
+          conglomeradoNombre: `Conglomerado ${brigada.municipio}`,
+          municipio: brigada.municipio
         }));
         setBrigadas(mapped);
       } catch (err) {
@@ -115,7 +117,7 @@ const GestionarBrigadas: React.FC = () => {
   const filteredBrigadas = useMemo(() => {
     if (!normalizedSearch) return brigadas;
     return brigadas.filter((brigada) => {
-      const idMatch = formatBrigadaId(brigada.id).toLowerCase().includes(normalizedSearch);
+      const idMatch = formatBrigadaId(brigada.municipio || '').toLowerCase().includes(normalizedSearch);
       const estadoMatch = brigada.estado.toLowerCase().includes(normalizedSearch);
       const conglomeradoMatch = brigada.conglomeradoNombre?.toLowerCase().includes(normalizedSearch) ?? false;
       const integrantesMatch = brigada.integrantes.toLowerCase().includes(normalizedSearch);
@@ -266,7 +268,7 @@ const GestionarBrigadas: React.FC = () => {
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#2E7D32' }}>
-                      {formatBrigadaId(brigada.id)}
+                      {formatBrigadaId(brigada.municipio || '')}
                     </Typography>
                     <Chip label={brigada.estado.toUpperCase()} color={getEstadoChipColor(brigada.estado)} size="small" />
                   </Box>
