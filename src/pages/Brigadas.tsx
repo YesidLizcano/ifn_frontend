@@ -126,6 +126,29 @@ const getMemberRole = (member: Integrante): string => {
   return 'SIN_ROL';
 };
 
+const generateIntegrantesSummary = (members: BrigadaIntegranteDetalle[]): string => {
+  const count = members.length;
+  const roles: Record<string, number> = {
+    'JEFE_BRIGADA': 0,
+    'BOTANICO': 0,
+    'AUXILIAR': 0,
+    'COINVESTIGADOR': 0
+  };
+  
+  members.forEach(m => {
+    if (roles[m.rol] !== undefined) roles[m.rol]++;
+  });
+
+  const parts = [`Integrantes (${count})`];
+  
+  if (roles['JEFE_BRIGADA'] > 0) parts.push(`${roles['JEFE_BRIGADA']} Jefe${roles['JEFE_BRIGADA'] > 1 ? 's' : ''}`);
+  if (roles['BOTANICO'] > 0) parts.push(`${roles['BOTANICO']} Botánico${roles['BOTANICO'] > 1 ? 's' : ''}`);
+  if (roles['AUXILIAR'] > 0) parts.push(`${roles['AUXILIAR']} Auxiliar${roles['AUXILIAR'] > 1 ? 'es' : ''}`);
+  if (roles['COINVESTIGADOR'] > 0) parts.push(`${roles['COINVESTIGADOR']} Coinvestigador${roles['COINVESTIGADOR'] > 1 ? 'es' : ''}`);
+
+  return parts.join(' | ');
+};
+
 const GestionarBrigadas: React.FC = () => {
   const [brigadas, setBrigadas] = useState<Brigada[]>([]);
   const [loading, setLoading] = useState(true);
@@ -259,7 +282,13 @@ const GestionarBrigadas: React.FC = () => {
       await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, integranteId, token);
       
       // Actualizar la lista de integrantes localmente
-      setSelectedBrigadaMembers(prev => prev.filter(m => m.id_integrante !== integranteId));
+      const newMembers = selectedBrigadaMembers.filter(m => m.id_integrante !== integranteId);
+      setSelectedBrigadaMembers(newMembers);
+
+      // Actualizar el resumen en la lista de brigadas
+      const newSummary = generateIntegrantesSummary(newMembers);
+      setBrigadas(prev => prev.map(b => b.id === selectedBrigadaIdForDialog ? { ...b, integrantes: newSummary } : b));
+
       alert('Integrante eliminado con éxito');
     } catch (error) {
       console.error('Error deleting member:', error);
@@ -319,6 +348,10 @@ const GestionarBrigadas: React.FC = () => {
       // Refresh members list
       const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
       setSelectedBrigadaMembers(updatedMembers);
+
+      // Actualizar el resumen en la lista de brigadas
+      const newSummary = generateIntegrantesSummary(updatedMembers);
+      setBrigadas(prev => prev.map(b => b.id === selectedBrigadaIdForDialog ? { ...b, integrantes: newSummary } : b));
       
       // Remove from available list
       setAvailableMembers(prev => prev.filter(m => m.id !== member.id));
@@ -387,6 +420,10 @@ const GestionarBrigadas: React.FC = () => {
         // Refresh
         const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
         setSelectedBrigadaMembers(updatedMembers);
+
+        // Actualizar el resumen en la lista de brigadas
+        const newSummary = generateIntegrantesSummary(updatedMembers);
+        setBrigadas(prev => prev.map(b => b.id === selectedBrigadaIdForDialog ? { ...b, integrantes: newSummary } : b));
         
         // Reset UI
         setMemberToReplace(null);
