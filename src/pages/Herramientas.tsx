@@ -264,7 +264,8 @@ const GestionarHerramientas: React.FC = () => {
         };
         console.debug('PATCH /materiales_equipos payload:', payloadToSend);
 
-        await actualizarHerramienta(
+        // Llamar al endpoint de actualización y capturar la respuesta
+        const updated = await actualizarHerramienta(
           parseInt(selectedHerramienta.id),
           payloadToSend.nombre,
           payloadToSend.cantidad,
@@ -272,25 +273,31 @@ const GestionarHerramientas: React.FC = () => {
           token
         );
 
-        // Actualizar estado local con lo que devolvió el backend sería lo ideal; como no
-        // hacemos una nueva consulta aquí, actualizamos de forma conservadora usando el valor enviado.
-        const nuevasOcupadas = selectedHerramienta.ocupadas;
-        const nuevosDisponibles = (payloadCantidad) - nuevasOcupadas;
+        // Mostrar resultado (detalle) devuelto por el backend al usuario
+        try {
+          const detalle = updated && typeof updated === 'object' ? JSON.stringify(updated) : String(updated);
+          alert(`Actualización realizada correctamente. Respuesta servidor: ${detalle}`);
+        } catch (e) {
+          alert('Actualización realizada correctamente.');
+        }
 
-        setHerramientas(prev => 
-          prev.map(herramienta => 
-            herramienta.id === selectedHerramienta.id 
-              ? { 
-                  ...herramienta,
-                  nombre: editData.nombre || '',
-                  cantidadTotal: payloadCantidad,
-                  disponibles: nuevosDisponibles >= 0 ? nuevosDisponibles : 0,
-                  departamento: editData.departamento || '',
-                  departamento_id: depId!
-                }
-              : herramienta
-          )
-        );
+        // Recargar herramientas desde backend para reflejar el estado real
+        try {
+          const fresh = await listarHerramientas(selectedDepartment || '', token);
+          const mappedFresh: Herramienta[] = fresh.map((h: HerramientaService) => ({
+            id: h.id.toString(),
+            nombre: h.nombre,
+            cantidadTotal: h.cantidad,
+            disponibles: h.cantidad,
+            ocupadas: 0,
+            departamento: selectedDepartment || '',
+            departamento_id: h.departamento_id,
+            fechaCreacion: new Date().toISOString()
+          }));
+          setHerramientas(mappedFresh);
+        } catch (e) {
+          console.warn('No se pudo recargar la lista tras la actualización:', e);
+        }
       } catch (error) {
         console.error('Error actualizando herramienta:', error);
         const msg = (error as any)?.message || JSON.stringify(error) || 'Error al actualizar la herramienta';
