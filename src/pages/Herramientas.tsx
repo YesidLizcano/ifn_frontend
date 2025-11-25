@@ -23,7 +23,7 @@ import {
   Chip,
   Autocomplete
 } from '@mui/material';
-import { listarHerramientas, crearHerramienta, Herramienta as HerramientaService } from '../services/core';
+import { listarHerramientas, crearHerramienta, actualizarHerramienta, Herramienta as HerramientaService } from '../services/core';
 
 // Interfaces para los datos
 interface Herramienta {
@@ -33,6 +33,7 @@ interface Herramienta {
   disponibles: number;
   ocupadas: number;
   departamento: string;
+  departamento_id: number;
   fechaCreacion: string;
 }
 
@@ -122,6 +123,7 @@ const GestionarHerramientas: React.FC = () => {
           disponibles: h.cantidad, // Asumimos que inicialmente todas están disponibles
           ocupadas: 0, 
           departamento: selectedDepartment,
+          departamento_id: h.departamento_id,
           fechaCreacion: new Date().toISOString()
         }));
         
@@ -149,7 +151,8 @@ const GestionarHerramientas: React.FC = () => {
       setEditData({
         nombre: herramienta.nombre,
         cantidadTotal: herramienta.cantidadTotal,
-        departamento: herramienta.departamento
+        departamento: herramienta.departamento,
+        departamento_id: herramienta.departamento_id
       });
     } else if (type === 'create') {
       setEditData({
@@ -202,6 +205,7 @@ const GestionarHerramientas: React.FC = () => {
           disponibles: h.cantidad,
           ocupadas: 0,
           departamento: selectedDepartment!,
+          departamento_id: h.departamento_id,
           fechaCreacion: new Date().toISOString()
         }));
         setHerramientas(mapped);
@@ -219,24 +223,61 @@ const GestionarHerramientas: React.FC = () => {
   };
 
   // Guardar cambios de edición
-  const handleSave = () => {
+  const handleSave = async () => {
     if (selectedHerramienta && dialogType === 'edit') {
-      const nuevasOcupadas = selectedHerramienta.ocupadas;
-      const nuevosDisponibles = (editData.cantidadTotal || 0) - nuevasOcupadas;
-      
-      setHerramientas(prev => 
-        prev.map(herramienta => 
-          herramienta.id === selectedHerramienta.id 
-            ? { 
-                ...herramienta,
-                nombre: editData.nombre || '',
-                cantidadTotal: editData.cantidadTotal || 0,
-                disponibles: nuevosDisponibles >= 0 ? nuevosDisponibles : 0,
-                departamento: editData.departamento || ''
-              }
-            : herramienta
-        )
-      );
+      try {
+        const token = localStorage.getItem('access_token') || '';
+        
+        // Determinar el ID del departamento
+        let depId = editData.departamento_id;
+        
+        // Si el departamento cambió, buscar el nuevo ID
+        if (editData.departamento && editData.departamento !== selectedHerramienta.departamento) {
+             const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento);
+             if (index !== -1) depId = index + 1;
+        }
+        
+        // Fallback si no tenemos ID
+        if (!depId) {
+             const index = DEPARTAMENTOS_COLOMBIA.indexOf(editData.departamento || selectedHerramienta.departamento);
+             if (index !== -1) depId = index + 1;
+        }
+
+        if (!depId) {
+            alert("No se pudo determinar el ID del departamento");
+            return;
+        }
+
+        await actualizarHerramienta(
+            parseInt(selectedHerramienta.id),
+            editData.nombre || selectedHerramienta.nombre,
+            editData.cantidadTotal || selectedHerramienta.cantidadTotal,
+            depId,
+            token
+        );
+
+        // Actualizar estado local
+        const nuevasOcupadas = selectedHerramienta.ocupadas;
+        const nuevosDisponibles = (editData.cantidadTotal || 0) - nuevasOcupadas;
+        
+        setHerramientas(prev => 
+          prev.map(herramienta => 
+            herramienta.id === selectedHerramienta.id 
+              ? { 
+                  ...herramienta,
+                  nombre: editData.nombre || '',
+                  cantidadTotal: editData.cantidadTotal || 0,
+                  disponibles: nuevosDisponibles >= 0 ? nuevosDisponibles : 0,
+                  departamento: editData.departamento || '',
+                  departamento_id: depId!
+                }
+              : herramienta
+          )
+        );
+      } catch (error) {
+          console.error('Error actualizando herramienta:', error);
+          alert('Error al actualizar la herramienta');
+      }
     }
     handleCloseDialog();
   };
@@ -559,11 +600,17 @@ const GestionarHerramientas: React.FC = () => {
                   InputProps={{ inputProps: { min: 1 } }}
                 />
                 
-                <TextField
-                  fullWidth
-                  label="Departamento"
+                <Autocomplete
+                  options={DEPARTAMENTOS_COLOMBIA}
                   value={editData.departamento || ''}
-                  onChange={(e) => handleEditChange('departamento', e.target.value)}
+                  onChange={(event, newValue) => handleEditChange('departamento', newValue)}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      label="Departamento" 
+                      fullWidth
+                    />
+                  )}
                 />
 
                 {selectedHerramienta && (

@@ -498,3 +498,45 @@ export async function crearHerramienta(
 
   return await respuesta.json();
 }
+
+export async function actualizarHerramienta(
+  id: number,
+  nombre: string,
+  cantidad: number,
+  departamentoId: number,
+  token: string
+): Promise<any> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/materiales_equipos/${id}`;
+
+  const body = {
+    nombre,
+    cantidad,
+    departamento_id: departamentoId
+  };
+
+  const respuesta = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al actualizar herramienta';
+    try {
+      const data = await respuesta.json();
+      if (data?.detail) {
+        detalle = data.detail;
+      } else if (data?.message) {
+        detalle = data.message;
+      }
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}
