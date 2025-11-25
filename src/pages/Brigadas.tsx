@@ -117,6 +117,15 @@ const getEstadoBorderColor = (estado: string) => {
   }
 };
 
+const getMemberRole = (member: Integrante): string => {
+  if (member.rol) return member.rol;
+  if (member.jefeBrigada) return 'JEFE_BRIGADA';
+  if (member.botanico) return 'BOTANICO';
+  if (member.auxiliar) return 'AUXILIAR';
+  if (member.coinvestigador) return 'COINVESTIGADOR';
+  return 'SIN_ROL';
+};
+
 const GestionarBrigadas: React.FC = () => {
   const [brigadas, setBrigadas] = useState<Brigada[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,7 +330,7 @@ const GestionarBrigadas: React.FC = () => {
         const currentMemberIds = new Set(selectedBrigadaMembers.map(m => m.id_integrante));
         const available = members.filter(m => 
             !currentMemberIds.has(m.id) && 
-            m.rol === member.rol // Ensure same role
+            getMemberRole(m) === member.rol // Ensure same role
         );
         
         setAvailableMembers(available);
@@ -613,7 +622,7 @@ const GestionarBrigadas: React.FC = () => {
                     {availableMembers.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell>{member.nombreCompleto || member.nombre}</TableCell>
-                        <TableCell>{member.rol}</TableCell>
+                        <TableCell>{getMemberRole(member)}</TableCell>
                         <TableCell>
                           <Button 
                             size="small" 
