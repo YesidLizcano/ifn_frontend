@@ -1,5 +1,5 @@
-
-PAGINA WEB: https://ifnfrontend.vercel.app/
+PÁGINA WEB: https://ifnfrontend.vercel.app/
+Nota: Al momento de iniciar sesión, es posible que debas esperar unos segundos, ya que el backend está desplegado en Render y puede tardar en activarse.
 
 
 1.Instalar dependencias (solo la primera vez)
