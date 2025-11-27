@@ -4,6 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { AppBar, Toolbar, Button, Box, Menu, MenuItem, Typography, IconButton, Drawer, List, ListItem, ListItemButton, ListItemText, useMediaQuery } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import MenuIcon from '@mui/icons-material/Menu';
+import { getCookie, removeCookie } from "../utils/cookies";
 
 export default function Navbar() {
   const buttonStyle = {
@@ -36,23 +37,21 @@ export default function Navbar() {
   // Verificar si hay un usuario autenticado al cargar el componente y escuchar cambios
   useEffect(() => {
     const checkAuth = () => {
-      const usuario = localStorage.getItem('usuarioAutenticado');
+      const usuario = getCookie('usuarioAutenticado');
       setUsuarioAutenticado(usuario === 'true');
     };
 
     // Verificar al cargar
     checkAuth();
 
-    // Escuchar cambios en el localStorage y eventos personalizados
+    // Escuchar cambios en eventos personalizados
     const handleAuthChange = () => {
       checkAuth();
     };
 
-    window.addEventListener('storage', handleAuthChange);
     window.addEventListener('authStateChange', handleAuthChange);
     
     return () => {
-      window.removeEventListener('storage', handleAuthChange);
       window.removeEventListener('authStateChange', handleAuthChange);
     };
   }, []);
@@ -65,7 +64,10 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('usuarioAutenticado');
+    removeCookie('access_token');
+    removeCookie('usuarioAutenticado');
+    removeCookie('usuarioEmail');
+    removeCookie('usuarioNombre');
     setUsuarioAutenticado(false);
     // Disparar evento para notificar el logout
     window.dispatchEvent(new Event('authStateChange'));

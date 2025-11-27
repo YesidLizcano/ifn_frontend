@@ -24,6 +24,7 @@ import {
   Autocomplete
 } from '@mui/material';
 import { listarHerramientas, crearHerramienta, actualizarHerramienta, eliminarHerramienta, Herramienta as HerramientaService } from '../services/core';
+import { getCookie } from '../utils/cookies';
 
 // Interfaces para los datos
 interface Herramienta {
@@ -101,7 +102,7 @@ const GestionarHerramientas: React.FC = () => {
 
       setLoading(true);
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         const data = await listarHerramientas(selectedDepartment, token);
         
         // Intentar obtener el ID del departamento de los datos
@@ -194,7 +195,7 @@ const GestionarHerramientas: React.FC = () => {
   const handleGuardarNuevaHerramienta = async () => {
     if (nuevaHerramienta.nombre.trim() && nuevaHerramienta.cantidadTotal > 0 && selectedDepartmentId) {
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         await crearHerramienta(
           selectedDepartmentId,
           nuevaHerramienta.nombre,
@@ -232,7 +233,7 @@ const GestionarHerramientas: React.FC = () => {
   const handleSave = async () => {
     if (selectedHerramienta && dialogType === 'edit') {
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
 
         // Determinar el ID del departamento
         let depId = editData.departamento_id;
@@ -316,7 +317,7 @@ const GestionarHerramientas: React.FC = () => {
     if (!selectedHerramienta) return;
 
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       const id = parseInt(selectedHerramienta.id);
 
       // Llamar al endpoint DELETE

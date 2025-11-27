@@ -11,6 +11,7 @@ import {
   OtrosMaterialesItem,
   AsignacionHerramientaPayload,
 } from '../services/core';
+import { getCookie } from '../utils/cookies';
 import {
   Box,
   Card,
@@ -110,7 +111,7 @@ const GestionarConglomerados: React.FC = () => {
     const cargarConglomerados = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         const datos = await listarConglomerados(token);
 
         // Mapear respuesta a la interfaz local Conglomerado
@@ -183,7 +184,7 @@ const GestionarConglomerados: React.FC = () => {
         return;
       }
 
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       setLoadingIntegrantes(true);
       try {
         // Usar las fechas ingresadas por el usuario en el diálogo si existen en editData;
@@ -262,7 +263,7 @@ const GestionarConglomerados: React.FC = () => {
 
     setLoadingTools(true);
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       const inicio = (editData.fechaInicio as string) || selectedConglomerado.fechaInicio || '';
       const fin = (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox || '';
       
@@ -384,7 +385,7 @@ const GestionarConglomerados: React.FC = () => {
     // 3. Llamar al servicio
     setLoadingAssign(true);
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       await asignarBrigada(Number(selectedConglomerado.id), brigadaPayload, token);
 
       // 4. Actualizar UI en caso de éxito
@@ -565,7 +566,7 @@ const GestionarConglomerados: React.FC = () => {
     if (selectedConglomerado) {
       setLoadingDelete(true);
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         await eliminarConglomerado(Number(selectedConglomerado.id), token);
         
         setConglomerados(prev => 

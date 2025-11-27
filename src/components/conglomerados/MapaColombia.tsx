@@ -22,7 +22,7 @@ const ConglomeradoCircles: React.FC<{ conglomerados: Coordenada[] }> = ({ conglo
           <Circle
             key={conglomerado.id}
             center={[conglomerado.latitud, conglomerado.longitud]}
-            radius={15000}
+            radius={80}
             pathOptions={{
               fillColor: '#4CAF50',
               color: '#2E7D32',

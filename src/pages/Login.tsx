@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { login as authLogin } from '../services/auth';
+import { setCookie } from '../utils/cookies';
 
 // Componentes de íconos alternativos
 const UserIcon = () => (
@@ -76,13 +77,13 @@ const Login: React.FC = () => {
 
     try {
       const respuesta = await authLogin(credenciales.usuario, credenciales.contraseña);
-      // Guardar token y datos de usuario
-      localStorage.setItem('access_token', respuesta.access_token);
-      localStorage.setItem('usuarioAutenticado', 'true');
-      localStorage.setItem('usuarioEmail', respuesta.user.email);
-      localStorage.setItem('usuarioNombre', respuesta.user.name);
+      // Guardar token y datos de usuario en cookies (1 día)
+      setCookie('access_token', respuesta.access_token, 1);
+      setCookie('usuarioAutenticado', 'true', 1);
+      setCookie('usuarioEmail', respuesta.user.email, 1);
+      setCookie('usuarioNombre', respuesta.user.name, 1);
+      
       // Notificar a otros componentes
-      window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('authStateChange'));
       navigate('/');
     } catch (err) {

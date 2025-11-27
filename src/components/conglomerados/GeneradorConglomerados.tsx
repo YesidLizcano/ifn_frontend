@@ -3,6 +3,7 @@ import MapaColombia from './MapaColombia';
 import { guardarConglomerado } from '../../services/core';
 import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
 import { verificarCoordenadasEnColombia } from '../../services/core';
+import { getCookie } from '../../utils/cookies';
 
   const MAX_CONGLOMERADOS = 20;
 
@@ -42,7 +43,7 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
       }
 
       setCargando(true);
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       let verificados: ConglomeradoVerificado[] = [];
       let intentos = 0;
       while (verificados.length < cantidadNumerica && intentos < 20) {
@@ -159,7 +160,7 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
                               size="small"
                               sx={{ mr: 1 }}
                               onClick={async () => {
-                                const token = localStorage.getItem('access_token') || '';
+                                const token = getCookie('access_token') || '';
                                 try {
                                   await guardarConglomerado(c, token);
                                   alert(`Conglomerado ${c.municipio} guardado en BD`);

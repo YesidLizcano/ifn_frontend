@@ -35,6 +35,7 @@ import {
   Integrante,
   RawConglomeradoResponse
 } from '../services/core';
+import { getCookie } from '../utils/cookies';
 
 interface Brigada {
   id: number;
@@ -170,7 +171,7 @@ const GestionarBrigadas: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         
         // Cargar brigadas y conglomerados en paralelo
         const [brigadasData, conglomeradosData] = await Promise.all([
@@ -230,7 +231,7 @@ const GestionarBrigadas: React.FC = () => {
     setLoadingMembers(true);
     setMembersDialogOpen(true);
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       const members = await listarIntegrantesBrigada(brigadaId, token);
       setSelectedBrigadaMembers(members);
     } catch (error) {
@@ -278,7 +279,7 @@ const GestionarBrigadas: React.FC = () => {
     if (!window.confirm('¿Está seguro que desea eliminar este integrante de la brigada?')) return;
 
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, integranteId, token);
       
       // Actualizar la lista de integrantes localmente
@@ -314,7 +315,7 @@ const GestionarBrigadas: React.FC = () => {
 
     setLoadingMembers(true);
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       const members = await listarIntegrantesPorRegion(
         conglomerado.departamento_nombre,
         brigada.fechaInicio,
@@ -340,7 +341,7 @@ const GestionarBrigadas: React.FC = () => {
     if (!selectedBrigadaIdForDialog) return;
     const rol = getMemberRole(member);
     try {
-      const token = localStorage.getItem('access_token') || '';
+      const token = getCookie('access_token') || '';
       await agregarIntegranteBrigada(selectedBrigadaIdForDialog, member.id, rol, token);
       
       alert('Integrante agregado con éxito');
@@ -374,7 +375,7 @@ const GestionarBrigadas: React.FC = () => {
     setMemberToReplace(member);
     setLoadingMembers(true);
     try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         const members = await listarIntegrantesPorRegion(
             conglomerado.departamento_nombre,
             brigada.fechaInicio,
@@ -407,7 +408,7 @@ const GestionarBrigadas: React.FC = () => {
     const rol = getMemberRole(newMember);
 
     try {
-        const token = localStorage.getItem('access_token') || '';
+        const token = getCookie('access_token') || '';
         
         // 1. Add new member
         await agregarIntegranteBrigada(selectedBrigadaIdForDialog, newMember.id, rol, token);

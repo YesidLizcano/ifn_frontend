@@ -1,8 +1,9 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { getCookie } from '../utils/cookies';
 
 const ProtectedRoute = () => {
-  const isAuthenticated = localStorage.getItem('usuarioAutenticado') === 'true';
+  const isAuthenticated = getCookie('usuarioAutenticado') === 'true';
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
