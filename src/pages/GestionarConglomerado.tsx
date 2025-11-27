@@ -6,8 +6,9 @@ import {
   asignarBrigada,
   BrigadaCrear,
   eliminarConglomerado,
-  listarHerramientas, // Importar listarHerramientas
-  Herramienta, // Importar interfaz Herramienta
+  obtenerAsignacionDefecto, // Importar nuevo servicio
+  AsignacionDefectoItem, // Importar interfaces
+  OtrosMaterialesItem,
 } from '../services/core';
 import {
   Box,
@@ -88,23 +89,14 @@ const GestionarConglomerados: React.FC = () => {
   // Estados para asignación de herramientas
   const [assignStep, setAssignStep] = useState<0 | 1>(0); // 0: Integrantes, 1: Herramientas
   const [toolsData, setToolsData] = useState<{
-    completa: Herramienta[];
-    incompleta: Herramienta[];
-    otros: Herramienta[];
+    completa: AsignacionDefectoItem[];
+    incompleta: AsignacionDefectoItem[];
+    otros: OtrosMaterialesItem[];
     noEncontrados: string[];
-    sinDisponibilidad: Herramienta[];
+    sinDisponibilidad: string[];
   }>({ completa: [], incompleta: [], otros: [], noEncontrados: [], sinDisponibilidad: [] });
   const [assignedTools, setAssignedTools] = useState<Record<number, number>>({});
   const [loadingTools, setLoadingTools] = useState(false);
-
-  const REQUIRED_TOOLS: Record<string, number> = {
-    "Baterías hipsómetro": 2,
-    "Baterías pie de rey": 2,
-    "Botiquín": 1,
-    "Clinómetro": 1,
-    "Baterías GPS": 2,
-    // Se pueden agregar más según necesidad
-  };
 
   const today = new Date();
   const year = today.getFullYear();
@@ -270,47 +262,31 @@ const GestionarConglomerados: React.FC = () => {
     setLoadingTools(true);
     try {
       const token = localStorage.getItem('access_token') || '';
-      // Cargar herramientas del departamento
-      const herramientas = await listarHerramientas(selectedConglomerado.departamento, token);
+      const inicio = (editData.fechaInicio as string) || selectedConglomerado.fechaInicio || '';
+      const fin = (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox || '';
       
-      // Procesar herramientas
-      const completa: Herramienta[] = [];
-      const incompleta: Herramienta[] = [];
-      const otros: Herramienta[] = [];
-      const sinDisponibilidad: Herramienta[] = [];
-      const foundNames = new Set<string>();
+      // Llamar al nuevo servicio
+      const data = await obtenerAsignacionDefecto(selectedConglomerado.departamento, inicio, fin, token);
+      
+      // Inicializar cantidades asignadas
       const initialAssigned: Record<number, number> = {};
-
-      // Clasificar herramientas encontradas
-      herramientas.forEach(h => {
-        foundNames.add(h.nombre);
-        const requiredQty = REQUIRED_TOOLS[h.nombre];
-
-        if (requiredQty !== undefined) {
-          // Es obligatoria
-          if (h.cantidad <= 0) {
-             sinDisponibilidad.push(h);
-          } else if (h.cantidad < requiredQty) {
-            incompleta.push(h);
-          } else {
-            completa.push(h);
-            initialAssigned[h.id] = requiredQty; // Iniciar con la cantidad mínima
-          }
-        } else {
-          // Es opcional
-          if (h.cantidad > 0) {
-            otros.push(h);
-            initialAssigned[h.id] = 0; // Iniciar en 0
-          } else {
-            sinDisponibilidad.push(h);
-          }
-        }
+      
+      data.asignacion_completa.forEach(item => {
+        initialAssigned[item.material_equipo_id] = item.cantidad_solicitada;
+      });
+      
+      data.otros_materiales.forEach(item => {
+        initialAssigned[item.material_equipo_id] = 0;
       });
 
-      // Identificar no encontrados
-      const noEncontrados = Object.keys(REQUIRED_TOOLS).filter(name => !foundNames.has(name));
-
-      setToolsData({ completa, incompleta, otros, noEncontrados, sinDisponibilidad });
+      setToolsData({
+        completa: data.asignacion_completa,
+        incompleta: data.asignacion_incompleta,
+        otros: data.otros_materiales,
+        noEncontrados: data.materiales_no_encontrados,
+        sinDisponibilidad: data.sin_disponibilidad
+      });
+      
       setAssignedTools(initialAssigned);
       setAssignStep(1); // Ir al siguiente paso
 
@@ -954,29 +930,29 @@ const GestionarConglomerados: React.FC = () => {
                               HERRAMIENTAS OBLIGATORIAS
                             </Typography>
                             {toolsData.completa.map(h => {
-                              const min = REQUIRED_TOOLS[h.nombre] || 0;
-                              const current = assignedTools[h.id] || min;
+                              const min = h.cantidad_solicitada;
+                              const current = assignedTools[h.material_equipo_id] || min;
                               return (
-                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
                                   <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
                                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Typography variant="body2" color="textSecondary">
-                                      Cantidad mínima: {min} &nbsp;&nbsp; Disponibles: {h.cantidad}
+                                      Cantidad mínima: {min} &nbsp;&nbsp; Disponibles: {h.cantidad_disponible}
                                     </Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                       <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.id, 1, min, h.cantidad)}
-                                        disabled={current >= h.cantidad}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, min, h.cantidad_disponible)}
+                                        disabled={current >= h.cantidad_disponible}
                                       >
                                         +
                                       </Button>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.id, -1, min, h.cantidad)}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, min, h.cantidad_disponible)}
                                         disabled={current <= min}
                                       >
                                         -
@@ -996,14 +972,14 @@ const GestionarConglomerados: React.FC = () => {
                               HERRAMIENTAS OBLIGATORIAS – INCOMPLETAS
                             </Typography>
                             {toolsData.incompleta.map(h => {
-                              const required = REQUIRED_TOOLS[h.nombre] || 0;
+                              const required = h.cantidad_solicitada;
                               return (
-                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
                                   <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
                                   <Typography variant="body2">Obligatoria: {required}</Typography>
-                                  <Typography variant="body2">Disponible: {h.cantidad}</Typography>
+                                  <Typography variant="body2">Disponible: {h.cantidad_disponible}</Typography>
                                   <Typography variant="body2" color="error" fontWeight="bold">
-                                    Faltante: {required - h.cantidad} ❗
+                                    Faltante: {h.faltante} ❗
                                   </Typography>
                                   <Typography variant="caption" color="textSecondary">(No modificable)</Typography>
                                 </Box>
@@ -1019,28 +995,28 @@ const GestionarConglomerados: React.FC = () => {
                               MATERIALES OPCIONALES
                             </Typography>
                             {toolsData.otros.map(h => {
-                              const current = assignedTools[h.id] || 0;
+                              const current = assignedTools[h.material_equipo_id] || 0;
                               return (
-                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
                                   <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
                                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Typography variant="body2" color="textSecondary">
-                                      Máximo disponible: {h.cantidad}
+                                      Máximo disponible: {h.cantidad_disponible}
                                     </Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                       <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.id, 1, 0, h.cantidad)}
-                                        disabled={current >= h.cantidad}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, 0, h.cantidad_disponible)}
+                                        disabled={current >= h.cantidad_disponible}
                                       >
                                         +
                                       </Button>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.id, -1, 0, h.cantidad)}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, 0, h.cantidad_disponible)}
                                         disabled={current <= 0}
                                       >
                                         -
@@ -1076,9 +1052,9 @@ const GestionarConglomerados: React.FC = () => {
                               SIN DISPONIBILIDAD
                             </Typography>
                             <Box sx={{ p: 1 }}>
-                              {toolsData.sinDisponibilidad.map(h => (
-                                <Typography key={h.id} variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  • {h.nombre}
+                              {toolsData.sinDisponibilidad.map(name => (
+                                <Typography key={name} variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  • {name}
                                 </Typography>
                               ))}
                             </Box>

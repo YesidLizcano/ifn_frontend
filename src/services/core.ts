@@ -576,3 +576,63 @@ export async function eliminarHerramienta(
     return { success: true };
   }
 }
+
+// Asignación por defecto de herramientas
+export interface AsignacionDefectoItem {
+  material_equipo_id: number;
+  nombre: string;
+  cantidad_solicitada: number;
+  cantidad_disponible: number;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  faltante?: number; // Para incompleta
+}
+
+export interface OtrosMaterialesItem {
+  material_equipo_id: number;
+  nombre: string;
+  cantidad_total: number;
+  cantidad_disponible: number;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+export interface AsignacionDefectoResponse {
+  nombre_departamento: string;
+  asignacion_completa: AsignacionDefectoItem[];
+  asignacion_incompleta: AsignacionDefectoItem[];
+  otros_materiales: OtrosMaterialesItem[];
+  materiales_no_encontrados: string[];
+  sin_disponibilidad: string[];
+}
+
+export async function obtenerAsignacionDefecto(
+  nombreDepartamento: string,
+  fechaInicio: string,
+  fechaFinAprox: string,
+  token: string
+): Promise<AsignacionDefectoResponse> {
+  const baseUrl = process.env.REACT_APP_API_CORE_URL;
+  if (!baseUrl) throw new Error('Variable REACT_APP_API_CORE_URL no definida');
+  const url = `${baseUrl.replace(/\/$/, '')}/control-equipos/asignacion-defecto?nombre_departamento=${encodeURIComponent(nombreDepartamento)}&fecha_inicio=${encodeURIComponent(fechaInicio)}&fecha_fin_aprox=${encodeURIComponent(fechaFinAprox)}`;
+
+  const respuesta = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!respuesta.ok) {
+    let detalle = 'Error al obtener asignación por defecto';
+    try {
+      const data = await respuesta.json();
+      if (data?.message) detalle = data.message;
+      else if (data?.detail) detalle = data.detail;
+    } catch (_) {}
+    throw new Error(detalle);
+  }
+
+  return await respuesta.json();
+}
