@@ -48,8 +48,9 @@ import { verificarCoordenadasEnColombia } from '../../services/core';
       while (verificados.length < cantidadNumerica && intentos < 20) {
         const faltantes = cantidadNumerica - verificados.length;
         const coordenadasGeneradas: { latitud: number; longitud: number }[] = Array.from({ length: faltantes }, () => {
-          const latitud = parseFloat((Math.random() * (13.5 - 1.8) + 1.8).toFixed(6));
-          const longitud = parseFloat((Math.random() * (-66 - -79) + -79).toFixed(6));
+          const latitud = parseFloat((Math.random() * (13.4 - -4.3) + -4.3).toFixed(6));
+          const longitud = parseFloat((Math.random() * (-66.8 - -81.8) + -81.8).toFixed(6));
+
           return { latitud, longitud };
         });
         try {
