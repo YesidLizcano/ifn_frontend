@@ -20,6 +20,7 @@ import {
   Select,
   Alert
 } from '@mui/material';
+import { useNotification } from '../context/NotificationContext';
 
 // Interfaces para los datos
 interface Reporte {
@@ -58,6 +59,7 @@ const ReportIcon = () => (
 );
 
 const VisualizarReportes: React.FC = () => {
+  const { showNotification } = useNotification();
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
   const [fechaInicio, setFechaInicio] = useState<string>('');
   const [fechaFin, setFechaFin] = useState<string>('');
@@ -153,14 +155,14 @@ const VisualizarReportes: React.FC = () => {
   // Función para generar nuevo reporte
   const generarReporte = () => {
     if (reporteSeleccionado) {
-      alert(`Generando reporte: ${reporteSeleccionado}`);
+      showNotification(`Generando reporte: ${reporteSeleccionado}`, 'info');
       // Aquí iría la lógica real para generar el reporte
     }
   };
 
   // Función para descargar reporte
   const descargarReporte = (reporteId: string) => {
-    alert(`Descargando reporte: ${reporteId}`);
+    showNotification(`Descargando reporte: ${reporteId}`, 'info');
     // Aquí iría la lógica real para descargar el reporte
   };
 
@@ -391,7 +393,7 @@ const VisualizarReportes: React.FC = () => {
                             color="primary"
                             size="small"
                             startIcon={<VisibilityIcon />}
-                            onClick={() => alert(`Vista previa: ${reporte.id}`)}
+                            onClick={() => showNotification(`Vista previa: ${reporte.id}`, 'info')}
                           >
                             Ver
                           </Button>

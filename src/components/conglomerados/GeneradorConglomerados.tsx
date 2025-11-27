@@ -4,6 +4,7 @@ import { guardarConglomerado } from '../../services/core';
 import { Box, Button, Card, Container, TextField, Typography, Alert, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, TablePagination, CircularProgress } from '@mui/material';
 import { verificarCoordenadasEnColombia } from '../../services/core';
 import { getCookie } from '../../utils/cookies';
+import { useNotification } from '../../context/NotificationContext';
 
   const MAX_CONGLOMERADOS = 20;
 
@@ -23,6 +24,7 @@ import { getCookie } from '../../utils/cookies';
   }
 
   const GeneradorConglomerados: React.FC = () => {
+    const { showNotification } = useNotification();
     const [cantidad, setCantidad] = useState('');
     const [conglomerados, setConglomerados] = useState<ConglomeradoVerificado[]>([]);
     const [cargando, setCargando] = useState(false);
@@ -34,11 +36,11 @@ import { getCookie } from '../../utils/cookies';
     };
 
     const generarCoordenadasAleatorias = async () => {
-      if (cantidad === '') { alert('❌ Ingresa la cantidad'); return; }
+      if (cantidad === '') { showNotification('❌ Ingresa la cantidad', 'warning'); return; }
       const cantidadNumerica = parseInt(cantidad);
-      if (cantidadNumerica <= 0) { alert('❌ Debe ser mayor a 0'); return; }
+      if (cantidadNumerica <= 0) { showNotification('❌ Debe ser mayor a 0', 'warning'); return; }
       if (cantidadNumerica > MAX_CONGLOMERADOS) {
-        alert(`❌ Máximo permitido: ${MAX_CONGLOMERADOS} conglomerados por tanda`);
+        showNotification(`❌ Máximo permitido: ${MAX_CONGLOMERADOS} conglomerados por tanda`, 'warning');
         return;
       }
 
@@ -58,7 +60,7 @@ import { getCookie } from '../../utils/cookies';
           const nuevos: ConglomeradoVerificado[] = await verificarCoordenadasEnColombia(coordenadasGeneradas, token);
           verificados = verificados.concat(nuevos);
         } catch (error) {
-          alert('Error al verificar coordenadas en backend: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+          showNotification('Error al verificar coordenadas en backend: ' + (error instanceof Error ? error.message : 'Error desconocido'), 'error');
           break;
         }
         intentos++;
@@ -163,10 +165,10 @@ import { getCookie } from '../../utils/cookies';
                                 const token = getCookie('access_token') || '';
                                 try {
                                   await guardarConglomerado(c, token);
-                                  alert(`Conglomerado ${c.municipio} guardado en BD`);
+                                  showNotification(`Conglomerado ${c.municipio} guardado en BD`, 'success');
                                   setConglomerados(prev => prev.filter((_, i) => i !== index));
                                 } catch (error) {
-                                  alert('Error al guardar conglomerado: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+                                  showNotification('Error al guardar conglomerado: ' + (error instanceof Error ? error.message : 'Error desconocido'), 'error');
                                 }
                               }}
                             >

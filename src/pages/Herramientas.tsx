@@ -25,6 +25,7 @@ import {
 } from '@mui/material';
 import { listarHerramientas, crearHerramienta, actualizarHerramienta, eliminarHerramienta, Herramienta as HerramientaService } from '../services/core';
 import { getCookie } from '../utils/cookies';
+import { useNotification } from '../context/NotificationContext';
 
 // Interfaces para los datos
 interface Herramienta {
@@ -72,6 +73,7 @@ const AddIcon = () => (
 );
 
 const GestionarHerramientas: React.FC = () => {
+  const { showNotification } = useNotification();
   const [herramientas, setHerramientas] = useState<Herramienta[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHerramienta, setSelectedHerramienta] = useState<Herramienta | null>(null);
@@ -220,11 +222,11 @@ const GestionarHerramientas: React.FC = () => {
         setNuevaHerramienta({ nombre: '', cantidadTotal: 0 });
       } catch (error) {
         console.error('Error creando herramienta:', error);
-        alert('Error al crear la herramienta');
+        showNotification('Error al crear la herramienta', 'error');
       }
     } else {
       if (!selectedDepartmentId) {
-        alert('Seleccione un departamento válido primero');
+        showNotification('Seleccione un departamento válido primero', 'warning');
       }
     }
   };
@@ -251,7 +253,7 @@ const GestionarHerramientas: React.FC = () => {
         }
 
         if (!depId) {
-          alert("No se pudo determinar el ID del departamento");
+          showNotification("No se pudo determinar el ID del departamento", 'error');
           return;
         }
 
@@ -280,9 +282,9 @@ const GestionarHerramientas: React.FC = () => {
         // Mostrar resultado (detalle) devuelto por el backend al usuario
         try {
           const detalle = updated && typeof updated === 'object' ? JSON.stringify(updated) : String(updated);
-          alert(`Actualización realizada correctamente. Respuesta servidor: ${detalle}`);
+          showNotification(`Actualización realizada correctamente. Respuesta servidor: ${detalle}`, 'success');
         } catch (e) {
-          alert('Actualización realizada correctamente.');
+          showNotification('Actualización realizada correctamente.', 'success');
         }
 
         // Recargar herramientas desde backend para reflejar el estado real
@@ -306,7 +308,7 @@ const GestionarHerramientas: React.FC = () => {
         console.error('Error actualizando herramienta:', error);
         const msg = (error as any)?.message || JSON.stringify(error) || 'Error al actualizar la herramienta';
         // Mostrar detalle proveniente del backend cuando sea posible
-        alert(`Error al actualizar la herramienta: ${msg}`);
+        showNotification(`Error al actualizar la herramienta: ${msg}`, 'error');
       }
     }
     handleCloseDialog();
@@ -326,9 +328,9 @@ const GestionarHerramientas: React.FC = () => {
       // Mostrar resultado devuelto por el backend
       try {
         const detalle = resp && typeof resp === 'object' ? JSON.stringify(resp) : String(resp);
-        alert(`Eliminación realizada. Respuesta servidor: ${detalle}`);
+        showNotification(`Eliminación realizada. Respuesta servidor: ${detalle}`, 'success');
       } catch (e) {
-        alert('Eliminación realizada correctamente.');
+        showNotification('Eliminación realizada correctamente.', 'success');
       }
 
       // Recargar lista desde backend para reflejar estado real
@@ -354,7 +356,7 @@ const GestionarHerramientas: React.FC = () => {
     } catch (error) {
       console.error('Error eliminando herramienta:', error);
       const msg = (error as any)?.message || JSON.stringify(error) || 'Error al eliminar la herramienta';
-      alert(`Error al eliminar la herramienta: ${msg}`);
+      showNotification(`Error al eliminar la herramienta: ${msg}`, 'error');
     } finally {
       handleCloseDialog();
     }

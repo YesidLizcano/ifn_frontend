@@ -36,6 +36,7 @@ import {
   RawConglomeradoResponse
 } from '../services/core';
 import { getCookie } from '../utils/cookies';
+import { useNotification } from '../context/NotificationContext';
 
 interface Brigada {
   id: number;
@@ -151,6 +152,7 @@ const generateIntegrantesSummary = (members: BrigadaIntegranteDetalle[]): string
 };
 
 const GestionarBrigadas: React.FC = () => {
+  const { showNotification } = useNotification();
   const [brigadas, setBrigadas] = useState<Brigada[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +238,7 @@ const GestionarBrigadas: React.FC = () => {
       setSelectedBrigadaMembers(members);
     } catch (error) {
       console.error('Error loading members:', error);
-      alert('Error al cargar los integrantes de la brigada');
+      showNotification('Error al cargar los integrantes de la brigada', 'error');
       setMembersDialogOpen(false);
     } finally {
       setLoadingMembers(false);
@@ -271,7 +273,7 @@ const GestionarBrigadas: React.FC = () => {
 
       const role = memberToDelete.rol;
       if (roleCounts[role] <= (MINIMUMS[role] || 0)) {
-        alert(`No se puede eliminar. La brigada requiere mínimo ${MINIMUMS[role]} ${role.replace('_', ' ')}.`);
+        showNotification(`No se puede eliminar. La brigada requiere mínimo ${MINIMUMS[role]} ${role.replace('_', ' ')}.`, 'warning');
         return;
       }
     }
@@ -290,11 +292,11 @@ const GestionarBrigadas: React.FC = () => {
       const newSummary = generateIntegrantesSummary(newMembers);
       setBrigadas(prev => prev.map(b => b.id === selectedBrigadaIdForDialog ? { ...b, integrantes: newSummary } : b));
 
-      alert('Integrante eliminado con éxito');
+      showNotification('Integrante eliminado con éxito', 'success');
     } catch (error) {
       console.error('Error deleting member:', error);
       const msg = error instanceof Error ? error.message : 'Error desconocido';
-      alert(`Error al eliminar integrante: ${msg}`);
+      showNotification(`Error al eliminar integrante: ${msg}`, 'error');
     }
   };
 
@@ -309,7 +311,7 @@ const GestionarBrigadas: React.FC = () => {
       // Fallback: try to use municipio if department not found, or alert
       // But listarIntegrantesPorRegion expects department.
       // Maybe we can try to guess or just alert.
-      alert('No se encontró información del conglomerado para determinar la región (departamento).');
+      showNotification('No se encontró información del conglomerado para determinar la región (departamento).', 'error');
       return;
     }
 
@@ -331,7 +333,7 @@ const GestionarBrigadas: React.FC = () => {
       setShowAddMember(true);
     } catch (error) {
       console.error('Error loading available members:', error);
-      alert('Error al cargar integrantes disponibles');
+      showNotification('Error al cargar integrantes disponibles', 'error');
     } finally {
       setLoadingMembers(false);
     }
@@ -344,7 +346,7 @@ const GestionarBrigadas: React.FC = () => {
       const token = getCookie('access_token') || '';
       await agregarIntegranteBrigada(selectedBrigadaIdForDialog, member.id, rol, token);
       
-      alert('Integrante agregado con éxito');
+      showNotification('Integrante agregado con éxito', 'success');
       
       // Refresh members list
       const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
@@ -358,7 +360,7 @@ const GestionarBrigadas: React.FC = () => {
       setAvailableMembers(prev => prev.filter(m => m.id !== member.id));
     } catch (error) {
       console.error('Error adding member:', error);
-      alert('Error al agregar integrante');
+      showNotification('Error al agregar integrante', 'error');
     }
   };
 
@@ -368,7 +370,7 @@ const GestionarBrigadas: React.FC = () => {
     if (!brigada) return;
     const conglomerado = conglomerados.find(c => c.id === brigada.conglomerado_id);
     if (!conglomerado) {
-        alert('No se encontró información del conglomerado.');
+        showNotification('No se encontró información del conglomerado.', 'error');
         return;
     }
 
@@ -393,7 +395,7 @@ const GestionarBrigadas: React.FC = () => {
         setAvailableMembers(available);
     } catch (error) {
         console.error('Error loading replacements:', error);
-        alert('Error al cargar reemplazos disponibles');
+        showNotification('Error al cargar reemplazos disponibles', 'error');
         setMemberToReplace(null);
     } finally {
         setLoadingMembers(false);
@@ -416,7 +418,7 @@ const GestionarBrigadas: React.FC = () => {
         // 2. Remove old member
         await eliminarIntegranteBrigada(selectedBrigadaIdForDialog, memberToReplace.id_integrante, token);
         
-        alert('Reemplazo realizado con éxito');
+        showNotification('Reemplazo realizado con éxito', 'success');
         
         // Refresh
         const updatedMembers = await listarIntegrantesBrigada(selectedBrigadaIdForDialog, token);
@@ -432,7 +434,7 @@ const GestionarBrigadas: React.FC = () => {
 
     } catch (error) {
         console.error('Error replacing member:', error);
-        alert('Error al realizar el reemplazo');
+        showNotification('Error al realizar el reemplazo', 'error');
     }
   };
 
