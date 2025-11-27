@@ -16,8 +16,8 @@ export default function Home() {
   // 📸 Imágenes del carrusel / galería
   const imagenes = [
     "/images/carrusel7.jpg",
-    "/images/carrusel5.jpg",
-    "/images/carrusel3.jpg",
+    "/images/Carrusel5.jpg",
+    "/images/Carrusel3.jpg",
     "/images/carrusel4.jpg",
   ];
 

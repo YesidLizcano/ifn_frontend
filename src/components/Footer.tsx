@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Container, Typography } from "@mui/material";
+import GitHubIcon from '@mui/icons-material/GitHub';
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
             
             {/* Logo */}
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}>
-              <img src="/icons/Logo.png" style={{ width: 100, height: 100, marginRight: 15 }} />
+              <img src="/icons/Logo.png" style={{ width: 100, height: 100, marginRight: 15 }} alt="Logo IFN" />
               <Typography sx={{ fontWeight: "bold", whiteSpace: "pre-line", textAlign: "left" }}>
                 {"INVENTARIO FORESTAL\nNACIONAL"}
               </Typography>
@@ -27,10 +28,19 @@ export default function Footer() {
             {/* CONTACTO */}
             <Box>
               <Typography sx={{ fontWeight: "bold", mb: 1 }}>CONTÁCTENOS:</Typography>
-              <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" } }}>
-                <img src="/icons/facebook.png" width={40} height={40} style={{ filter: "invert(1)" }} />
-                <img src="/icons/instagram.png" width={40} height={40} style={{ filter: "invert(1)" }} />
-                <img src="/icons/sitio-web.png" width={40} height={40} style={{ filter: "invert(1)" }} />
+              <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" }, alignItems: "center" }}>
+                <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">
+                  <img src="/icons/facebook.png" width={40} height={40} style={{ filter: "invert(1)" }} alt="Facebook" />
+                </a>
+                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+                  <img src="/icons/instagram.png" width={40} height={40} style={{ filter: "invert(1)" }} alt="Instagram" />
+                </a>
+                <a href="https://www.minambiente.gov.co/" target="_blank" rel="noopener noreferrer">
+                  <img src="/icons/sitio-web.png" width={40} height={40} style={{ filter: "invert(1)" }} alt="Sitio Web" />
+                </a>
+                <a href="https://github.com/YesidLizcano/" target="_blank" rel="noopener noreferrer" style={{ color: 'white', display: 'flex', alignItems: 'center' }}>
+                  <GitHubIcon sx={{ fontSize: 40 }} />
+                </a>
               </Box>
             </Box>
           </Box>

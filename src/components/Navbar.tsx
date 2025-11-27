@@ -177,7 +177,7 @@ export default function Navbar() {
               <Button
                 color="inherit"
                 sx={buttonStyle}
-                startIcon={<img src="/icons/inicio.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
+                startIcon={<img src="/icons/Inicio.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
                 onClick={() => navigate("/")}
               >
                 Inicio
@@ -187,7 +187,7 @@ export default function Navbar() {
               <Button
                 color="inherit"
                 sx={buttonStyle}
-                startIcon={<img src="/icons/reportes.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
+                startIcon={<img src="/icons/Reportes.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
                 onClick={() => navigate("/reportes")}
               >
                 Reportes
@@ -247,7 +247,7 @@ export default function Navbar() {
               <Button
                 color="inherit"
                 sx={buttonStyle}
-                startIcon={<img src="/icons/manual.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
+                startIcon={<img src="/icons/Manual.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
                 onClick={handleManualIFN}
               >
                 Manual IFN
@@ -267,7 +267,7 @@ export default function Navbar() {
                 <Button
                   color="inherit"
                   sx={buttonStyle}
-                  startIcon={<img src="/icons/login.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
+                  startIcon={<img src="/icons/Login.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
                   onClick={handleLogin}
                 >
                   Login

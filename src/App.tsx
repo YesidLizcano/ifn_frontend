@@ -19,6 +19,8 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
+          <Route path="/reportes" element={<VisualizarReportes />} />
 
           {/* Rutas protegidas */}
           <Route element={<ProtectedRoute />}>
@@ -27,8 +29,6 @@ function App() {
             {/* Nueva ruta para brigadas */}
             <Route path="/brigadas/gestionar" element={<Brigadas />} />
             <Route path="/herramientas/gestionar" element={<Herramientas />} />
-            <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
-            <Route path="/reportes" element={<VisualizarReportes />} />
           </Route>
         </Route>
       </Routes>
