@@ -72,12 +72,6 @@ const SaveIcon = () => (
   </svg>
 );
 
-const MapIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
-  </svg>
-);
-
 // CalculateIcon removed — fecha fin se gestionará manualmente
 
 const GestionarConglomerados: React.FC = () => {
@@ -86,7 +80,6 @@ const GestionarConglomerados: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConglomerado, setSelectedConglomerado] = useState<Conglomerado | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'view' | 'edit' | 'delete' | 'assign' | 'assignDates'>('view');
   const [editData, setEditData] = useState<Partial<Conglomerado>>({});
   type BrigadaMember = Integrante | null;
@@ -675,20 +668,26 @@ const GestionarConglomerados: React.FC = () => {
               />
               
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<MapIcon />}
-                  onClick={() => setMapDialogOpen(true)}
-                >
-                  Ver Mapa
-                </Button>
                 <Chip 
                   label={`Total: ${conglomerados.length}`} 
                   variant="outlined" 
                   color="primary" 
                 />
               </Box>
+            </Box>
+
+            {/* Mapa de Conglomerados */}
+            <Box sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 2, overflow: 'hidden' }}>
+              <MapaColombia 
+                conglomerados={filteredConglomerados.map(c => ({
+                  id: Number(c.id),
+                  latitud: c.latitud,
+                  longitud: c.longitud,
+                  region: c.region,
+                  departamento: c.departamento,
+                  municipio: c.municipio
+                }))} 
+              />
             </Box>
           </Box>
 
@@ -803,38 +802,6 @@ const GestionarConglomerados: React.FC = () => {
             </Box>
           )}
         </Card>
-
-        {/* Diálogo de Mapa */}
-        <Dialog
-          open={mapDialogOpen}
-          onClose={() => setMapDialogOpen(false)}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            sx: {
-              height: '80vh',
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(10px)'
-            }
-          }}
-        >
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Mapa de Conglomerados</Typography>
-            <Button onClick={() => setMapDialogOpen(false)}>Cerrar</Button>
-          </DialogTitle>
-          <DialogContent>
-            <MapaColombia 
-              conglomerados={filteredConglomerados.map(c => ({
-                id: Number(c.id),
-                latitud: c.latitud,
-                longitud: c.longitud,
-                region: c.region,
-                departamento: c.departamento,
-                municipio: c.municipio
-              }))} 
-            />
-          </DialogContent>
-        </Dialog>
 
         {/* Diálogo de Edición */}
         <Dialog 
