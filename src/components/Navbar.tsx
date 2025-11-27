@@ -26,7 +26,6 @@ export default function Navbar() {
   });
 
   const [anchorElConglomerados, setAnchorElConglomerados] = React.useState<null | HTMLElement>(null);
-  const [anchorElBrigadas, setAnchorElBrigadas] = React.useState<null | HTMLElement>(null);
   const [usuarioAutenticado, setUsuarioAutenticado] = useState(false);
 
   const navigate = useNavigate();
@@ -56,7 +55,6 @@ export default function Navbar() {
   }, []);
 
   const handleCloseConglomerados = () => setAnchorElConglomerados(null);
-  const handleCloseBrigadas = () => setAnchorElBrigadas(null);
 
   const handleLogin = () => {
     navigate("/login");
@@ -158,27 +156,15 @@ export default function Navbar() {
                   </Menu>
                 </Box>
 
-                {/* Menú Brigadas */}
-                <Box>
-                  <Button
-                    color="inherit"
-                    sx={buttonStyle}
-                    startIcon={<img src="/icons/brigada.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
-                    onClick={(e) => setAnchorElBrigadas(e.currentTarget)}
-                  >
-                    Brigadas
-                  </Button>
-
-                  <Menu
-                    anchorEl={anchorElBrigadas}
-                    open={Boolean(anchorElBrigadas)}
-                    onClose={handleCloseBrigadas}
-                  >
-                    <MenuItem onClick={() => { handleCloseBrigadas(); navigate("/brigadas/gestionar"); }}>
-                      Gestionar Brigadas
-                    </MenuItem>
-                  </Menu>
-                </Box>
+                {/* Botón Brigadas (Directo) */}
+                <Button
+                  color="inherit"
+                  sx={buttonStyle}
+                  startIcon={<img src="/icons/brigada.png" width={24} height={24} style={{ filter: "invert(1)" }} />}
+                  onClick={() => navigate("/brigadas/gestionar")}
+                >
+                  Brigadas
+                </Button>
 
                 {/* Botón Herramientas */}
                 <Button
