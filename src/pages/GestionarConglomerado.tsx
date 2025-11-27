@@ -931,31 +931,54 @@ const GestionarConglomerados: React.FC = () => {
                             </Typography>
                             {toolsData.completa.map(h => {
                               const min = h.cantidad_solicitada;
-                              const current = assignedTools[h.material_equipo_id] || min;
+                              const max = h.cantidad_disponible;
+                              const current = assignedTools[h.material_equipo_id] ?? min;
+                              
                               return (
                                 <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
-                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="body2" color="textSecondary">
-                                      Cantidad mínima: {min} &nbsp;&nbsp; Disponibles: {h.cantidad_disponible}
-                                    </Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: 1, minWidth: '200px' }}>
+                                      <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                      <Typography variant="caption" color="textSecondary" display="block">
+                                        (Mínimo obligatorio: {min})
+                                      </Typography>
+                                    </Box>
+                                    
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
+                                      <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                                        (Disponibles: {max})
+                                      </Typography>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, min, h.cantidad_disponible)}
-                                        disabled={current >= h.cantidad_disponible}
-                                      >
-                                        +
-                                      </Button>
-                                      <Button 
-                                        size="small" 
-                                        variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, min, h.cantidad_disponible)}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, min, max)}
                                         disabled={current <= min}
+                                        sx={{ minWidth: '30px', p: 0 }}
                                       >
                                         -
+                                      </Button>
+                                      <TextField
+                                        type="number"
+                                        size="small"
+                                        value={current}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val)) {
+                                            const clamped = Math.max(min, Math.min(max, val));
+                                            setAssignedTools(prev => ({ ...prev, [h.material_equipo_id]: clamped }));
+                                          }
+                                        }}
+                                        inputProps={{ min, max, style: { textAlign: 'center' } }}
+                                        sx={{ width: '70px' }}
+                                      />
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, min, max)}
+                                        disabled={current >= max}
+                                        sx={{ minWidth: '30px', p: 0 }}
+                                      >
+                                        +
                                       </Button>
                                     </Box>
                                   </Box>
@@ -969,22 +992,18 @@ const GestionarConglomerados: React.FC = () => {
                         {toolsData.incompleta.length > 0 && (
                           <>
                             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#ffebee', p: 1, color: '#d32f2f' }}>
-                              HERRAMIENTAS OBLIGATORIAS – INCOMPLETAS
+                              HERRAMIENTAS CON ASIGNACIÓN INCOMPLETA
                             </Typography>
-                            {toolsData.incompleta.map(h => {
-                              const required = h.cantidad_solicitada;
-                              return (
-                                <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
-                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
-                                  <Typography variant="body2">Obligatoria: {required}</Typography>
-                                  <Typography variant="body2">Disponible: {h.cantidad_disponible}</Typography>
-                                  <Typography variant="body2" color="error" fontWeight="bold">
-                                    Faltante: {h.faltante} ❗
-                                  </Typography>
-                                  <Typography variant="caption" color="textSecondary">(No modificable)</Typography>
-                                </Box>
-                              );
-                            })}
+                            {toolsData.incompleta.map(h => (
+                              <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                <Typography variant="body2">Obligatorio: {h.cantidad_solicitada}</Typography>
+                                <Typography variant="body2">Disponibles: {h.cantidad_disponible}</Typography>
+                                <Typography variant="body2" color="error" fontWeight="bold">
+                                  Faltante: {h.faltante} ❗
+                                </Typography>
+                              </Box>
+                            ))}
                           </>
                         )}
 
@@ -992,34 +1011,52 @@ const GestionarConglomerados: React.FC = () => {
                         {toolsData.otros.length > 0 && (
                           <>
                             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#e0e0e0', p: 1 }}>
-                              MATERIALES OPCIONALES
+                              OTROS MATERIALES (OPCIONALES)
                             </Typography>
                             {toolsData.otros.map(h => {
-                              const current = assignedTools[h.material_equipo_id] || 0;
+                              const min = 0;
+                              const max = h.cantidad_disponible;
+                              const current = assignedTools[h.material_equipo_id] ?? 0;
                               return (
                                 <Box key={h.material_equipo_id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
-                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="body2" color="textSecondary">
-                                      Máximo disponible: {h.cantidad_disponible}
-                                    </Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                    
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
+                                      <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                                        (Máximo: {max})
+                                      </Typography>
                                       <Button 
                                         size="small" 
                                         variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, 0, h.cantidad_disponible)}
-                                        disabled={current >= h.cantidad_disponible}
-                                      >
-                                        +
-                                      </Button>
-                                      <Button 
-                                        size="small" 
-                                        variant="outlined" 
-                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, 0, h.cantidad_disponible)}
-                                        disabled={current <= 0}
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, -1, min, max)}
+                                        disabled={current <= min}
+                                        sx={{ minWidth: '30px', p: 0 }}
                                       >
                                         -
+                                      </Button>
+                                      <TextField
+                                        type="number"
+                                        size="small"
+                                        value={current}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val)) {
+                                            const clamped = Math.max(min, Math.min(max, val));
+                                            setAssignedTools(prev => ({ ...prev, [h.material_equipo_id]: clamped }));
+                                          }
+                                        }}
+                                        inputProps={{ min, max, style: { textAlign: 'center' } }}
+                                        sx={{ width: '70px' }}
+                                      />
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.material_equipo_id, 1, min, max)}
+                                        disabled={current >= max}
+                                        sx={{ minWidth: '30px', p: 0 }}
+                                      >
+                                        +
                                       </Button>
                                     </Box>
                                   </Box>
@@ -1033,7 +1070,7 @@ const GestionarConglomerados: React.FC = () => {
                         {toolsData.noEncontrados.length > 0 && (
                           <>
                             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#eceff1', p: 1 }}>
-                              NO ENCONTRADOS
+                              MATERIAL NO ENCONTRADO
                             </Typography>
                             <Box sx={{ p: 1 }}>
                               {toolsData.noEncontrados.map(name => (
