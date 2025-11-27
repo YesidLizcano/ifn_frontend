@@ -651,7 +651,7 @@ const GestionarConglomerados: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 sx={{ 
-                  width: 400,
+                  width: { xs: '100%', sm: 400 },
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: 'rgba(255,255,255,0.9)'
                   }

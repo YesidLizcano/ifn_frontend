@@ -6,12 +6,12 @@ export default function Footer() {
     <Box component="footer" sx={{ backgroundColor: "#011401ff", color: "white", py: 3 }}>
         <Container maxWidth="lg">
 
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" }, gap: 3, mb: 2 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" }, gap: 3, mb: 2, textAlign: { xs: "center", md: "left" } }}>
             
             {/* Logo */}
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}>
               <img src="/icons/Logo.png" style={{ width: 100, height: 100, marginRight: 15 }} />
-              <Typography sx={{ fontWeight: "bold", whiteSpace: "pre-line" }}>
+              <Typography sx={{ fontWeight: "bold", whiteSpace: "pre-line", textAlign: "left" }}>
                 {"INVENTARIO FORESTAL\nNACIONAL"}
               </Typography>
             </Box>
@@ -27,7 +27,7 @@ export default function Footer() {
             {/* CONTACTO */}
             <Box>
               <Typography sx={{ fontWeight: "bold", mb: 1 }}>CONTÁCTENOS:</Typography>
-              <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" } }}>
                 <img src="/icons/facebook.png" width={40} height={40} style={{ filter: "invert(1)" }} />
                 <img src="/icons/instagram.png" width={40} height={40} style={{ filter: "invert(1)" }} />
                 <img src="/icons/sitio-web.png" width={40} height={40} style={{ filter: "invert(1)" }} />

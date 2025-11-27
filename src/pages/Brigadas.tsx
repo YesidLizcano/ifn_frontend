@@ -497,13 +497,13 @@ const GestionarBrigadas: React.FC = () => {
               Consulte las brigadas registradas en el sistema y su estado actual
             </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
               <TextField
                 placeholder="Buscar por ID, estado, integrante o rol..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 sx={{
-                  width: 400,
+                  width: { xs: '100%', md: 400 },
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: 'rgba(255,255,255,0.9)'
                   }
@@ -517,7 +517,7 @@ const GestionarBrigadas: React.FC = () => {
                 }}
               />
 
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-end' }, width: { xs: '100%', md: 'auto' } }}>
                 <Chip label={`Total: ${brigadas.length}`} variant="outlined" color="primary" />
                 {Array.from(estadoResumen.entries()).map(([estado, cantidad]) => (
                   <Chip

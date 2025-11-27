@@ -28,29 +28,32 @@ const ManualIFN: React.FC = () => {
               src="https://visionamazonia.minambiente.gov.co/content/uploads/2023/04/Manual_IFN_Colombia_v4.pdf"
               width="100%"
               height="600px"
-              style={{ border: 'none', borderRadius: '8px' }}
+              style={{ border: 'none', borderRadius: '8px', minHeight: '400px' }}
               title="Manual IFN Colombia"
             />
           </Box>
           
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => window.open('https://visionamazonia.minambiente.gov.co/content/uploads/2023/04/Manual_IFN_Colombia_v4.pdf', '_blank')}
-            sx={{ mr: 2 }}
-          >
-            Abrir en nueva pestaña
-          </Button>
-          
-          <Button
-            variant="outlined"
-            color="primary"
-            component="a"
-            href="https://visionamazonia.minambiente.gov.co/content/uploads/2023/04/Manual_IFN_Colombia_v4.pdf"
-            download="Manual_IFN_Colombia_v4.pdf"
-          >
-            Descargar PDF
-          </Button>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center', gap: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => window.open('https://visionamazonia.minambiente.gov.co/content/uploads/2023/04/Manual_IFN_Colombia_v4.pdf', '_blank')}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              Abrir en nueva pestaña
+            </Button>
+            
+            <Button
+              variant="outlined"
+              color="primary"
+              component="a"
+              href="https://visionamazonia.minambiente.gov.co/content/uploads/2023/04/Manual_IFN_Colombia_v4.pdf"
+              download="Manual_IFN_Colombia_v4.pdf"
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              Descargar PDF
+            </Button>
+          </Box>
         </Card>
       </Container>
     </Box>

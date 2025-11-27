@@ -265,11 +265,12 @@ const VisualizarReportes: React.FC = () => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box sx={{ 
                 display: 'flex', 
+                flexDirection: { xs: 'column', md: 'row' },
                 flexWrap: 'wrap', 
                 gap: 3,
-                alignItems: 'flex-end'
+                alignItems: { xs: 'stretch', md: 'flex-end' }
               }}>
-                <FormControl sx={{ minWidth: 300, flex: 1 }}>
+                <FormControl sx={{ minWidth: { xs: '100%', md: 300 }, flex: 1 }}>
                   <InputLabel>Tipo de Reporte</InputLabel>
                   <Select
                     value={reporteSeleccionado}
@@ -290,7 +291,7 @@ const VisualizarReportes: React.FC = () => {
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
                   InputLabelProps={{ shrink: true }}
-                  sx={{ minWidth: 200 }}
+                  sx={{ minWidth: { xs: '100%', md: 200 } }}
                 />
                 
                 <TextField
@@ -299,7 +300,7 @@ const VisualizarReportes: React.FC = () => {
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
                   InputLabelProps={{ shrink: true }}
-                  sx={{ minWidth: 200 }}
+                  sx={{ minWidth: { xs: '100%', md: 200 } }}
                 />
               </Box>
               
@@ -310,7 +311,7 @@ const VisualizarReportes: React.FC = () => {
                   startIcon={<ReportIcon />}
                   onClick={generarReporte}
                   disabled={!reporteSeleccionado}
-                  sx={{ minWidth: 200 }}
+                  sx={{ minWidth: 200, width: { xs: '100%', sm: 'auto' } }}
                 >
                   Generar Reporte
                 </Button>
@@ -320,8 +321,8 @@ const VisualizarReportes: React.FC = () => {
 
           {/* Sección 3: Filtros y tabla de reportes */}
           <Card sx={{ p: 3, backgroundColor: 'rgba(248,248,248,0.9)' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-              <Typography variant="h5" sx={{ color: '#2E7D32' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h5" sx={{ color: '#2E7D32', textAlign: { xs: 'center', md: 'left' } }}>
                 Reportes Existentes
               </Typography>
               
@@ -330,7 +331,7 @@ const VisualizarReportes: React.FC = () => {
                 label="Filtrar por tipo"
                 value={filtroTipo}
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                sx={{ minWidth: 250 }}
+                sx={{ minWidth: 250, width: { xs: '100%', md: 'auto' } }}
               >
                 <MenuItem value="todos">Todos los tipos</MenuItem>
                 {tiposReporte.slice(1).map((tipo, index) => (

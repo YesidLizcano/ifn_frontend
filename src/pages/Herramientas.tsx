@@ -81,6 +81,7 @@ const GestionarHerramientas: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Datos del formulario para nueva herramienta
   const [nuevaHerramienta, setNuevaHerramienta] = useState({
@@ -139,8 +140,10 @@ const GestionarHerramientas: React.FC = () => {
     cargarHerramientas();
   }, [selectedDepartment]);
 
-  // Filtrar herramientas (actualmente solo muestra todas las del departamento seleccionado)
-  const filteredHerramientas = herramientas;
+  // Filtrar herramientas por departamento y término de búsqueda
+  const filteredHerramientas = herramientas.filter(h => 
+    h.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Manejar diálogos
   const handleOpenDialog = (herramienta: Herramienta | null, type: 'create' | 'edit' | 'delete') => {
@@ -429,26 +432,38 @@ const GestionarHerramientas: React.FC = () => {
             </Typography>
 
             {/* Barra de búsqueda y estadísticas */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-              <Autocomplete
-                options={DEPARTAMENTOS_COLOMBIA}
-                value={selectedDepartment}
-                onChange={(event, newValue) => setSelectedDepartment(newValue)}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Seleccionar Departamento" 
-                    variant="outlined"
-                    sx={{ 
-                      width: 400,
-                      backgroundColor: 'rgba(255,255,255,0.9)'
-                    }}
-                  />
-                )}
-                sx={{ width: 400 }}
-              />
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, width: { xs: '100%', lg: 'auto' } }}>
+                <Autocomplete
+                  options={DEPARTAMENTOS_COLOMBIA}
+                  value={selectedDepartment}
+                  onChange={(event, newValue) => setSelectedDepartment(newValue)}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      label="Seleccionar Departamento" 
+                      variant="outlined"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.9)'
+                      }}
+                    />
+                  )}
+                  sx={{ width: { xs: '100%', md: 300 } }}
+                />
+
+                <TextField
+                  label="Buscar herramienta"
+                  variant="outlined"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{ 
+                    width: { xs: '100%', md: 300 },
+                    backgroundColor: 'rgba(255,255,255,0.9)'
+                  }}
+                />
+              </Box>
               
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'center', lg: 'flex-end' } }}>
                 <Chip 
                   label={`Total: ${herramientas.length}`} 
                   variant="outlined" 

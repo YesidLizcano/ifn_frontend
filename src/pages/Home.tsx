@@ -42,31 +42,33 @@ export default function Home() {
         <Box
           sx={{
             display: "flex",
-            alignItems: "flex-start",
+            flexDirection: { xs: "column", md: "row" },
+            alignItems: { xs: "center", md: "flex-start" },
             justifyContent: "space-between",
             width: "100%",
             mb: 6,
-            padding: "0 40px",
+            padding: { xs: "0 20px", md: "0 40px" },
+            textAlign: { xs: "center", md: "left" },
           }}
         >
           {/* Título */}
-          <Box sx={{ flex: 1, marginLeft: 6, minWidth: "300px" }}>
-            <Typography variant="h2" sx={{ color: "white", fontWeight: "bold", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9, mb: 0.5 }}>
+          <Box sx={{ flex: 1, marginLeft: { xs: 0, md: 6 }, minWidth: "300px", mb: { xs: 4, md: 0 } }}>
+            <Typography variant="h2" sx={{ color: "white", fontWeight: "bold", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9, mb: 0.5, fontSize: { xs: "3rem", md: "3.75rem" } }}>
               INVENTARIO
             </Typography>
 
-            <Typography variant="h3" sx={{ color: "white", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9 }}>
+            <Typography variant="h3" sx={{ color: "white", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9, fontSize: { xs: "2.5rem", md: "3rem" } }}>
               FORESTAL
             </Typography>
 
-            <Typography variant="h4" sx={{ color: "white", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9 }}>
+            <Typography variant="h4" sx={{ color: "white", textShadow: "3px 3px 6px rgba(0,0,0,0.8)", lineHeight: 0.9, fontSize: { xs: "2rem", md: "2.125rem" } }}>
               NACIONAL
             </Typography>
           </Box>
 
           {/* Bienvenida */}
-          <Box sx={{ flex: 1, maxWidth: "400px", textAlign: "left", mt: 1 }}>
-            <Typography variant="h2" sx={{ color: "white", fontWeight: "bold", textShadow: "2px 2px 4px rgba(0,0,0,0.7)", mb: 1.5 }}>
+          <Box sx={{ flex: 1, maxWidth: "400px", textAlign: { xs: "center", md: "left" }, mt: 1 }}>
+            <Typography variant="h2" sx={{ color: "white", fontWeight: "bold", textShadow: "2px 2px 4px rgba(0,0,0,0.7)", mb: 1.5, fontSize: { xs: "2.5rem", md: "3.75rem" } }}>
               ¡Bienvenido!
             </Typography>
             <Typography variant="body1" sx={{ color: "white", textShadow: "2px 2px 4px rgba(0,0,0,0.7)", fontSize: "1.1rem" }}>
@@ -107,12 +109,14 @@ export default function Home() {
           <Box
             sx={{
               display: "flex",
+              flexDirection: { xs: "column", md: "row" },
               alignItems: "center",
               gap: 3,
               padding: 4,
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               borderRadius: "12px",
               boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+              textAlign: { xs: "center", md: "left" },
             }}
           >
             <Box
@@ -124,6 +128,7 @@ export default function Home() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <Box
@@ -134,7 +139,7 @@ export default function Home() {
             </Box>
 
             <Box>
-              <Typography variant="h4" sx={{ color: "white", fontWeight: "bold", mb: 2 }}>
+              <Typography variant="h4" sx={{ color: "white", fontWeight: "bold", mb: 2, fontSize: { xs: "1.5rem", md: "2.125rem" } }}>
                 Información del IFN
               </Typography>
               <Typography sx={{ color: "white" }}>
@@ -151,12 +156,14 @@ export default function Home() {
           <Box
             sx={{
               display: "flex",
+              flexDirection: { xs: "column", md: "row" },
               alignItems: "center",
               gap: 3,
               padding: 4,
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               borderRadius: "12px",
               boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+              textAlign: { xs: "center", md: "left" },
             }}
           >
             <Box
@@ -168,6 +175,7 @@ export default function Home() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <Box
@@ -178,7 +186,7 @@ export default function Home() {
             </Box>
 
             <Box>
-              <Typography variant="h4" sx={{ color: "white", fontWeight: "bold", mb: 2 }}>
+              <Typography variant="h4" sx={{ color: "white", fontWeight: "bold", mb: 2, fontSize: { xs: "1.5rem", md: "2.125rem" } }}>
                 Valor del IFN
               </Typography>
               <Typography sx={{ color: "white" }}>
