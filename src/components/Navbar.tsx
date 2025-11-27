@@ -145,7 +145,7 @@ export default function Navbar() {
         <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 
           {/* Logo + texto */}
-          <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
             <img
               src="/icons/Logo.png"
               alt="Logo IFN"
@@ -169,10 +169,10 @@ export default function Navbar() {
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-around",
+                justifyContent: "center",
                 alignItems: "center",
-                flex: 2,
-                gap: 1,
+                flexGrow: 1,
+                gap: 2,
               }}
             >
               {/* Botón Inicio - Siempre visible */}
