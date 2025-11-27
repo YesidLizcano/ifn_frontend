@@ -183,12 +183,18 @@ export interface IntegranteAsignado {
   rol_asignado: string;
 }
 
+export interface AsignacionHerramientaPayload {
+  material_equipo_id: number;
+  cantidad_solicitada: number;
+}
+
 export interface BrigadaCrear {
   fechaCreacion: string;
   estado: string;
   fechaInicio: string;
   fechaFinAprox: string;
   integrantes_asignados: IntegranteAsignado[];
+  asignacion_completa: AsignacionHerramientaPayload[];
 }
 
 export async function asignarBrigada(

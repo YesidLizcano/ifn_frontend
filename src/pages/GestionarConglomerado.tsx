@@ -9,6 +9,7 @@ import {
   obtenerAsignacionDefecto, // Importar nuevo servicio
   AsignacionDefectoItem, // Importar interfaces
   OtrosMaterialesItem,
+  AsignacionHerramientaPayload,
 } from '../services/core';
 import {
   Box,
@@ -328,6 +329,12 @@ const GestionarConglomerados: React.FC = () => {
       return;
     }
 
+    // Validar que no existan problemas con las herramientas
+    if (toolsData.incompleta.length > 0 || toolsData.noEncontrados.length > 0 || toolsData.sinDisponibilidad.length > 0) {
+      alert('No se puede asignar la brigada: existen herramientas incompletas, no encontradas o sin disponibilidad.');
+      return;
+    }
+
     // 2. Construir el payload para la API
     const integrantes_asignados: { integrante_id: number; rol_asignado: string }[] = [];
 
@@ -345,7 +352,19 @@ const GestionarConglomerados: React.FC = () => {
     });
 
     // TODO: Incluir herramientas en el payload si el backend lo soporta
-    // Por ahora solo enviamos integrantes como antes
+    // Construir el array de asignación de herramientas
+    const asignacion_completa: AsignacionHerramientaPayload[] = [];
+    
+    // Agregar herramientas obligatorias y opcionales que tengan cantidad > 0
+    Object.entries(assignedTools).forEach(([idStr, cantidad]) => {
+      const id = Number(idStr);
+      if (cantidad > 0) {
+        asignacion_completa.push({
+          material_equipo_id: id,
+          cantidad_solicitada: cantidad
+        });
+      }
+    });
 
     const today = new Date();
     const year = today.getFullYear();
@@ -359,6 +378,7 @@ const GestionarConglomerados: React.FC = () => {
       fechaInicio: (editData.fechaInicio as string) || selectedConglomerado.fechaInicio,
       fechaFinAprox: (editData.fechaFinAprox as string) || selectedConglomerado.fechaFinAprox,
       integrantes_asignados,
+      asignacion_completa
     };
 
     // 3. Llamar al servicio
@@ -1168,7 +1188,7 @@ const GestionarConglomerados: React.FC = () => {
                       color="primary"
                       startIcon={loadingAssign ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                       onClick={handleAssign}
-                      disabled={loadingAssign}
+                      disabled={loadingAssign || toolsData.incompleta.length > 0 || toolsData.noEncontrados.length > 0 || toolsData.sinDisponibilidad.length > 0}
                     >
                       {loadingAssign ? 'Asignando...' : 'Asignar Brigada'}
                     </Button>
