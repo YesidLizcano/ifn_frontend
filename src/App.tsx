@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import MainLayout from "./Layout/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import ConglomeradosCrear from "./pages/CrearConglomerado";
@@ -13,19 +14,22 @@ import Login from "./pages/Login";
 function App() {
   return (
     <BrowserRouter>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/conglomerados/crear" element={<ConglomeradosCrear />} />
-          <Route path="/conglomerados/gestionar" element={<GestionarConglomerados />} />
-          {/* Nueva ruta para brigadas */}
-          <Route path="/brigadas/gestionar" element={<Brigadas />} />
-          <Route path="/herramientas/gestionar" element={<Herramientas />} />
-          <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
-          <Route path="/reportes" element={<VisualizarReportes />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </MainLayout>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout><Outlet /></MainLayout>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/conglomerados/crear" element={<ConglomeradosCrear />} />
+            <Route path="/conglomerados/gestionar" element={<GestionarConglomerados />} />
+            {/* Nueva ruta para brigadas */}
+            <Route path="/brigadas/gestionar" element={<Brigadas />} />
+            <Route path="/herramientas/gestionar" element={<Herramientas />} />
+            <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
+            <Route path="/reportes" element={<VisualizarReportes />} />
+          </Route>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

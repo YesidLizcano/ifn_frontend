@@ -1,14 +1,14 @@
 import React from "react";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 import {
-  AppBar,
-  Toolbar,
   Typography,
-  Button,
   Box,
-  Container,
-  Menu,
-  MenuItem
+  Container
 } from "@mui/material";
 
 export default function Home() {
@@ -77,30 +77,34 @@ export default function Home() {
           </Box>
         </Box>
 
-        {/* -------------------- Galería -------------------- */}
+        {/* -------------------- Galería (Carrusel) -------------------- */}
         <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: 3,
-              mt: 3,
-            }}
-          >
-            {imagenes.map((img, index) => (
-              <Box
-                key={index}
-                component="img"
-                src={img}
-                sx={{
-                  width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
-                }}
-              />
-            ))}
+          <Box sx={{ mt: 3, borderRadius: "12px", overflow: "hidden", boxShadow: "0 4px 10px rgba(0,0,0,0.4)" }}>
+            <Swiper
+              modules={[Navigation, Pagination, Autoplay]}
+              spaceBetween={30}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              autoplay={{ delay: 3000, disableOnInteraction: false }}
+              loop={true}
+              style={{ width: "100%", height: "400px" }}
+            >
+              {imagenes.map((img, index) => (
+                <SwiperSlide key={index}>
+                  <Box
+                    component="img"
+                    src={img}
+                    alt={`Imagen ${index + 1}`}
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </Box>
         </Container>
 
