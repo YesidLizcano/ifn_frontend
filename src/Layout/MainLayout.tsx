@@ -2,6 +2,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import CookieConsent from "../components/CookieConsent";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <Footer />
+      <CookieConsent />
     </>
   );
 }

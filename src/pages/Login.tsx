@@ -77,6 +77,17 @@ const Login: React.FC = () => {
 
     try {
       const respuesta = await authLogin(credenciales.usuario, credenciales.contraseña);
+      // Verificar consentimiento de cookies antes de guardarlas
+      const consentimiento = (() => {
+        try { return localStorage.getItem('cookie_consent'); } catch (e) { return null; }
+      })();
+
+      if (consentimiento !== 'accepted') {
+        setError('Debes aceptar las cookies para iniciar sesión. Revisa el aviso de cookies.');
+        setCargando(false);
+        return;
+      }
+
       // Guardar token y datos de usuario en cookies (1 día)
       setCookie('access_token', respuesta.access_token, 1);
       setCookie('usuarioAutenticado', 'true', 1);
