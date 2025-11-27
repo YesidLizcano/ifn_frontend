@@ -15,11 +15,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        <Route element={<ProtectedRoute />}>
-          <Route element={<MainLayout><Outlet /></MainLayout>}>
-            <Route path="/" element={<Home />} />
+        <Route element={<MainLayout><Outlet /></MainLayout>}>
+          {/* Rutas públicas */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+
+          {/* Rutas protegidas */}
+          <Route element={<ProtectedRoute />}>
             <Route path="/conglomerados/crear" element={<ConglomeradosCrear />} />
             <Route path="/conglomerados/gestionar" element={<GestionarConglomerados />} />
             {/* Nueva ruta para brigadas */}
