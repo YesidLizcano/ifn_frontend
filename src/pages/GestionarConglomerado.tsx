@@ -458,6 +458,13 @@ const GestionarConglomerados: React.FC = () => {
     setEditData({});
     setLoadingAssign(false); // Resetear estado de carga
     setLoadingDelete(false); // Resetear estado de carga de eliminación
+
+    // Limpiar datos de brigada y herramientas al cerrar para asegurar que no queden residuos
+    setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
+    setIntegrantesByRole({});
+    setAssignStep(0);
+    setToolsData({ completa: [], incompleta: [], otros: [], noEncontrados: [], sinDisponibilidad: [] });
+    setAssignedTools({});
   };
 
   // Función para obtener el color del estado
