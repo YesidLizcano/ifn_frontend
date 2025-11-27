@@ -13,6 +13,7 @@ import {
 } from '../services/core';
 import MapaColombia from '../components/conglomerados/MapaColombia';
 import { getCookie } from '../utils/cookies';
+import { useNotification } from '../context/NotificationContext';
 import {
   Box,
   Card,
@@ -100,6 +101,7 @@ const GestionarConglomerados: React.FC = () => {
   }>({ completa: [], incompleta: [], otros: [], noEncontrados: [], sinDisponibilidad: [] });
   const [assignedTools, setAssignedTools] = useState<Record<number, number>>({});
   const [loadingTools, setLoadingTools] = useState(false);
+  const { showNotification } = useNotification();
 
   const today = new Date();
   const year = today.getFullYear();
@@ -246,19 +248,19 @@ const GestionarConglomerados: React.FC = () => {
 
     // Validaciones de integrantes
     if (!brigadaData.jefeBrigada?.id) {
-      alert('Seleccione el jefe de brigada');
+      showNotification('Seleccione el jefe de brigada', 'warning');
       return;
     }
     if (brigadaData.auxiliarTecnicos.filter(Boolean).length < 1) {
-      alert('Debe asignar al menos un auxiliar técnico');
+      showNotification('Debe asignar al menos un auxiliar técnico', 'warning');
       return;
     }
     if (brigadaData.botanicos.filter(Boolean).length < 1) {
-      alert('Debe asignar al menos un botánico');
+      showNotification('Debe asignar al menos un botánico', 'warning');
       return;
     }
     if (brigadaData.coinvestigadores.filter(Boolean).length < 2) {
-      alert('Debe asignar al menos dos coinvestigadores');
+      showNotification('Debe asignar al menos dos coinvestigadores', 'warning');
       return;
     }
 
@@ -295,7 +297,7 @@ const GestionarConglomerados: React.FC = () => {
 
     } catch (error) {
       console.error('Error cargando herramientas:', error);
-      alert('Error al cargar las herramientas para la asignación.');
+      showNotification('Error al cargar las herramientas para la asignación.', 'error');
     } finally {
       setLoadingTools(false);
     }
@@ -315,25 +317,25 @@ const GestionarConglomerados: React.FC = () => {
 
     // 1. Validaciones
     if (!brigadaData.jefeBrigada?.id) {
-      alert('Seleccione el jefe de brigada');
+      showNotification('Seleccione el jefe de brigada', 'warning');
       return;
     }
     if (brigadaData.auxiliarTecnicos.filter(Boolean).length < 1) {
-      alert('Debe asignar al menos un auxiliar técnico');
+      showNotification('Debe asignar al menos un auxiliar técnico', 'warning');
       return;
     }
     if (brigadaData.botanicos.filter(Boolean).length < 1) {
-      alert('Debe asignar al menos un botánico');
+      showNotification('Debe asignar al menos un botánico', 'warning');
       return;
     }
     if (brigadaData.coinvestigadores.filter(Boolean).length < 2) {
-      alert('Debe asignar al menos dos coinvestigadores');
+      showNotification('Debe asignar al menos dos coinvestigadores', 'warning');
       return;
     }
 
     // Validar que no existan problemas con las herramientas
     if (toolsData.incompleta.length > 0 || toolsData.noEncontrados.length > 0 || toolsData.sinDisponibilidad.length > 0) {
-      alert('No se puede asignar la brigada: existen herramientas incompletas, no encontradas o sin disponibilidad.');
+      showNotification('No se puede asignar la brigada: existen herramientas incompletas, no encontradas o sin disponibilidad.', 'error');
       return;
     }
 
@@ -400,14 +402,14 @@ const GestionarConglomerados: React.FC = () => {
       setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
       setIntegrantesByRole({});
 
-      alert('Brigada asignada con éxito');
+      showNotification('Brigada asignada con éxito', 'success');
       handleCloseDialog();
 
     } catch (error) {
       console.error('Error al asignar la brigada:', error);
       // Extraer mensaje detallado si el servicio lo arrojó en error.message
       const mensaje = error instanceof Error ? error.message : 'Error desconocido';
-      alert(`Error al asignar la brigada: ${mensaje}`);
+      showNotification(`Error al asignar la brigada: ${mensaje}`, 'error');
     } finally {
       setLoadingAssign(false);
     }
@@ -420,22 +422,22 @@ const GestionarConglomerados: React.FC = () => {
     const fin = editData.fechaFinAprox as string | undefined;
 
     if (!inicio || !inicio.trim()) {
-      alert('Ingrese una Fecha Inicio válida');
+      showNotification('Ingrese una Fecha Inicio válida', 'warning');
       return;
     }
 
     if (!fin || !fin.trim()) {
-      alert('Ingrese una Fecha Fin Aprox válida');
+      showNotification('Ingrese una Fecha Fin Aprox válida', 'warning');
       return;
     }
 
     // Validar que las fechas no sean anteriores a hoy
     if (inicio < todayString) {
-      alert('La Fecha Inicio no puede ser anterior a la fecha de hoy.');
+      showNotification('La Fecha Inicio no puede ser anterior a la fecha de hoy.', 'warning');
       return;
     }
     if (fin < todayString) {
-      alert('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.');
+      showNotification('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.', 'warning');
       return;
     }
 
@@ -445,7 +447,7 @@ const GestionarConglomerados: React.FC = () => {
     const diffMs = dFin.getTime() - dInicio.getTime();
     const oneDayMs = 24 * 60 * 60 * 1000;
     if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime()) || diffMs < oneDayMs) {
-      alert('La Fecha Fin Aprox debe ser al menos un día después de la Fecha Inicio');
+      showNotification('La Fecha Fin Aprox debe ser al menos un día después de la Fecha Inicio', 'warning');
       return;
     }
 
@@ -543,11 +545,11 @@ const GestionarConglomerados: React.FC = () => {
       const fin = editData.fechaFinAprox as string | undefined;
 
       if (inicio && inicio < todayString) {
-        alert('La Fecha Inicio no puede ser anterior a la fecha de hoy.');
+        showNotification('La Fecha Inicio no puede ser anterior a la fecha de hoy.', 'warning');
         return;
       }
       if (fin && fin < todayString) {
-        alert('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.');
+        showNotification('La Fecha Fin Aprox no puede ser anterior a la fecha de hoy.', 'warning');
         return;
       }
 
@@ -573,11 +575,11 @@ const GestionarConglomerados: React.FC = () => {
         setConglomerados(prev => 
           prev.filter(cong => cong.id !== selectedConglomerado.id)
         );
-        alert('Conglomerado eliminado con éxito.');
+        showNotification('Conglomerado eliminado con éxito.', 'success');
         handleCloseDialog();
       } catch (error) {
         console.error('Error al eliminar el conglomerado:', error);
-        alert(`Error al eliminar el conglomerado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        showNotification(`Error al eliminar el conglomerado: ${error instanceof Error ? error.message : 'Error desconocido'}`, 'error');
         setLoadingDelete(false); // Asegurarse de resetear el estado en caso de error
       }
       // El finally no es necesario si se resetea en ambos casos (éxito y error)

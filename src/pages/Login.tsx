@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { login as authLogin } from '../services/auth';
 import { setCookie } from '../utils/cookies';
+import { useNotification } from '../context/NotificationContext';
 
 // Componentes de íconos alternativos
 const UserIcon = () => (
@@ -54,6 +55,7 @@ const Login: React.FC = () => {
   const [cargando, setCargando] = useState(false);
   const [mostrarContraseña, setMostrarContraseña] = useState(false);
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
 
   const handleChange = (campo: string, valor: string) => {
     setCredenciales(prev => ({
@@ -70,7 +72,7 @@ const Login: React.FC = () => {
 
     // Validaciones básicas
     if (!credenciales.usuario.trim() || !credenciales.contraseña.trim()) {
-      setError('Por favor ingrese usuario y contraseña');
+      showNotification('Por favor ingrese usuario y contraseña', 'warning');
       setCargando(false);
       return;
     }
@@ -83,7 +85,7 @@ const Login: React.FC = () => {
       })();
 
       if (consentimiento !== 'accepted') {
-        setError('Debes aceptar las cookies para iniciar sesión. Revisa el aviso de cookies.');
+        showNotification('Debes aceptar las cookies para iniciar sesión. Revisa el aviso de cookies.', 'warning');
         setCargando(false);
         return;
       }
@@ -96,10 +98,11 @@ const Login: React.FC = () => {
       
       // Notificar a otros componentes
       window.dispatchEvent(new Event('authStateChange'));
+      showNotification('Inicio de sesión exitoso', 'success');
       navigate('/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
-      setError(msg);
+      showNotification(msg, 'error');
     } finally {
       setCargando(false);
     }
@@ -223,12 +226,7 @@ const Login: React.FC = () => {
                 disabled={cargando}
               />
 
-              {/* Mensaje de error */}
-              {error && (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {error}
-                </Alert>
-              )}
+              {/* Mensaje de error eliminado, ahora se usa Snackbar */}
 
               {/* Botón de ingreso */}
               <Button

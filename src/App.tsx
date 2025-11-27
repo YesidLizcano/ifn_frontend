@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import MainLayout from "./Layout/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { NotificationProvider } from "./context/NotificationContext";
 
 import Home from "./pages/Home";
 import ConglomeradosCrear from "./pages/CrearConglomerado";
@@ -13,26 +14,28 @@ import Login from "./pages/Login";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout><Outlet /></MainLayout>}>
-          {/* Rutas públicas */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
-          <Route path="/reportes" element={<VisualizarReportes />} />
+    <NotificationProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout><Outlet /></MainLayout>}>
+            {/* Rutas públicas */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/manualIFN/visualizar" element={<ManualIFN />} />
+            <Route path="/reportes" element={<VisualizarReportes />} />
 
-          {/* Rutas protegidas */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/conglomerados/crear" element={<ConglomeradosCrear />} />
-            <Route path="/conglomerados/gestionar" element={<GestionarConglomerados />} />
-            {/* Nueva ruta para brigadas */}
-            <Route path="/brigadas/gestionar" element={<Brigadas />} />
-            <Route path="/herramientas/gestionar" element={<Herramientas />} />
+            {/* Rutas protegidas */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/conglomerados/crear" element={<ConglomeradosCrear />} />
+              <Route path="/conglomerados/gestionar" element={<GestionarConglomerados />} />
+              {/* Nueva ruta para brigadas */}
+              <Route path="/brigadas/gestionar" element={<Brigadas />} />
+              <Route path="/herramientas/gestionar" element={<Herramientas />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </NotificationProvider>
   );
 }
 
