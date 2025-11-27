@@ -5,7 +5,9 @@ import {
   Integrante,
   asignarBrigada,
   BrigadaCrear,
-  eliminarConglomerado, // Importar el nuevo servicio
+  eliminarConglomerado,
+  listarHerramientas, // Importar listarHerramientas
+  Herramienta, // Importar interfaz Herramienta
 } from '../services/core';
 import {
   Box,
@@ -82,6 +84,27 @@ const GestionarConglomerados: React.FC = () => {
   const [loadingIntegrantes, setLoadingIntegrantes] = useState(false);
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  
+  // Estados para asignación de herramientas
+  const [assignStep, setAssignStep] = useState<0 | 1>(0); // 0: Integrantes, 1: Herramientas
+  const [toolsData, setToolsData] = useState<{
+    completa: Herramienta[];
+    incompleta: Herramienta[];
+    otros: Herramienta[];
+    noEncontrados: string[];
+    sinDisponibilidad: Herramienta[];
+  }>({ completa: [], incompleta: [], otros: [], noEncontrados: [], sinDisponibilidad: [] });
+  const [assignedTools, setAssignedTools] = useState<Record<number, number>>({});
+  const [loadingTools, setLoadingTools] = useState(false);
+
+  const REQUIRED_TOOLS: Record<string, number> = {
+    "Baterías hipsómetro": 2,
+    "Baterías pie de rey": 2,
+    "Botiquín": 1,
+    "Clinómetro": 1,
+    "Baterías GPS": 2,
+    // Se pueden agregar más según necesidad
+  };
 
   const today = new Date();
   const year = today.getFullYear();
@@ -139,6 +162,10 @@ const GestionarConglomerados: React.FC = () => {
       setBrigadaData({ jefeBrigada: null, auxiliarTecnicos: [null], botanicos: [null], coinvestigadores: [null, null] });
       // limpiar integrantes anteriores
       setIntegrantesByRole({});
+      // Resetear paso y herramientas
+      setAssignStep(0);
+      setToolsData({ completa: [], incompleta: [], otros: [], noEncontrados: [], sinDisponibilidad: [] });
+      setAssignedTools({});
     } else if (type === 'assignDates') {
       setEditData({
         fechaInicio: conglomerado.fechaInicio,
@@ -218,6 +245,92 @@ const GestionarConglomerados: React.FC = () => {
     });
   };
 
+  // Paso 1: Validar integrantes y cargar herramientas
+  const handleNextStep = async () => {
+    if (!selectedConglomerado || !selectedConglomerado.id) return;
+
+    // Validaciones de integrantes
+    if (!brigadaData.jefeBrigada?.id) {
+      alert('Seleccione el jefe de brigada');
+      return;
+    }
+    if (brigadaData.auxiliarTecnicos.filter(Boolean).length < 1) {
+      alert('Debe asignar al menos un auxiliar técnico');
+      return;
+    }
+    if (brigadaData.botanicos.filter(Boolean).length < 1) {
+      alert('Debe asignar al menos un botánico');
+      return;
+    }
+    if (brigadaData.coinvestigadores.filter(Boolean).length < 2) {
+      alert('Debe asignar al menos dos coinvestigadores');
+      return;
+    }
+
+    setLoadingTools(true);
+    try {
+      const token = localStorage.getItem('access_token') || '';
+      // Cargar herramientas del departamento
+      const herramientas = await listarHerramientas(selectedConglomerado.departamento, token);
+      
+      // Procesar herramientas
+      const completa: Herramienta[] = [];
+      const incompleta: Herramienta[] = [];
+      const otros: Herramienta[] = [];
+      const sinDisponibilidad: Herramienta[] = [];
+      const foundNames = new Set<string>();
+      const initialAssigned: Record<number, number> = {};
+
+      // Clasificar herramientas encontradas
+      herramientas.forEach(h => {
+        foundNames.add(h.nombre);
+        const requiredQty = REQUIRED_TOOLS[h.nombre];
+
+        if (requiredQty !== undefined) {
+          // Es obligatoria
+          if (h.cantidad <= 0) {
+             sinDisponibilidad.push(h);
+          } else if (h.cantidad < requiredQty) {
+            incompleta.push(h);
+          } else {
+            completa.push(h);
+            initialAssigned[h.id] = requiredQty; // Iniciar con la cantidad mínima
+          }
+        } else {
+          // Es opcional
+          if (h.cantidad > 0) {
+            otros.push(h);
+            initialAssigned[h.id] = 0; // Iniciar en 0
+          } else {
+            sinDisponibilidad.push(h);
+          }
+        }
+      });
+
+      // Identificar no encontrados
+      const noEncontrados = Object.keys(REQUIRED_TOOLS).filter(name => !foundNames.has(name));
+
+      setToolsData({ completa, incompleta, otros, noEncontrados, sinDisponibilidad });
+      setAssignedTools(initialAssigned);
+      setAssignStep(1); // Ir al siguiente paso
+
+    } catch (error) {
+      console.error('Error cargando herramientas:', error);
+      alert('Error al cargar las herramientas para la asignación.');
+    } finally {
+      setLoadingTools(false);
+    }
+  };
+
+  const handleToolQuantityChange = (id: number, delta: number, min: number, max: number) => {
+    setAssignedTools(prev => {
+      const current = prev[id] || 0;
+      const newValue = current + delta;
+      if (newValue < min || newValue > max) return prev;
+      return { ...prev, [id]: newValue };
+    });
+  };
+
   const handleAssign = async () => {
     if (!selectedConglomerado || !selectedConglomerado.id) return;
 
@@ -254,6 +367,9 @@ const GestionarConglomerados: React.FC = () => {
     brigadaData.coinvestigadores.forEach(c => {
       if (c?.id) integrantes_asignados.push({ integrante_id: c.id, rol_asignado: 'COINVESTIGADOR' });
     });
+
+    // TODO: Incluir herramientas en el payload si el backend lo soporta
+    // Por ahora solo enviamos integrantes como antes
 
     const today = new Date();
     const year = today.getFullYear();
@@ -752,7 +868,7 @@ const GestionarConglomerados: React.FC = () => {
                     />
                   </Box>
                 )}
-                {dialogType === 'assign' && (
+                {dialogType === 'assign' && assignStep === 0 && (
                   <Box sx={{ mt: 2 }}>
                     {/* Jefe de brigada: select si hay resultados, fallback a texto */}
                     {/* Jefe de brigada: Autocomplete siempre visible, permite texto libre con freeSolo */}
@@ -822,6 +938,156 @@ const GestionarConglomerados: React.FC = () => {
                     <Button size="small" onClick={() => addArrayItem('coinvestigadores')}>Agregar Coinvestigador</Button>
                   </Box>
                 )}
+
+                {dialogType === 'assign' && assignStep === 1 && (
+                  <Box sx={{ mt: 2 }}>
+                    {loadingTools ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <>
+                        {/* Herramientas Obligatorias */}
+                        {toolsData.completa.length > 0 && (
+                          <>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#e0e0e0', p: 1 }}>
+                              HERRAMIENTAS OBLIGATORIAS
+                            </Typography>
+                            {toolsData.completa.map(h => {
+                              const min = REQUIRED_TOOLS[h.nombre] || 0;
+                              const current = assignedTools[h.id] || min;
+                              return (
+                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                      Cantidad mínima: {min} &nbsp;&nbsp; Disponibles: {h.cantidad}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.id, 1, min, h.cantidad)}
+                                        disabled={current >= h.cantidad}
+                                      >
+                                        +
+                                      </Button>
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.id, -1, min, h.cantidad)}
+                                        disabled={current <= min}
+                                      >
+                                        -
+                                      </Button>
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Herramientas Incompletas */}
+                        {toolsData.incompleta.length > 0 && (
+                          <>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#ffebee', p: 1, color: '#d32f2f' }}>
+                              HERRAMIENTAS OBLIGATORIAS – INCOMPLETAS
+                            </Typography>
+                            {toolsData.incompleta.map(h => {
+                              const required = REQUIRED_TOOLS[h.nombre] || 0;
+                              return (
+                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                  <Typography variant="body2">Obligatoria: {required}</Typography>
+                                  <Typography variant="body2">Disponible: {h.cantidad}</Typography>
+                                  <Typography variant="body2" color="error" fontWeight="bold">
+                                    Faltante: {required - h.cantidad} ❗
+                                  </Typography>
+                                  <Typography variant="caption" color="textSecondary">(No modificable)</Typography>
+                                </Box>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Materiales Opcionales */}
+                        {toolsData.otros.length > 0 && (
+                          <>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#e0e0e0', p: 1 }}>
+                              MATERIALES OPCIONALES
+                            </Typography>
+                            {toolsData.otros.map(h => {
+                              const current = assignedTools[h.id] || 0;
+                              return (
+                                <Box key={h.id} sx={{ mb: 2, p: 1, borderBottom: '1px solid #eee' }}>
+                                  <Typography variant="body1" fontWeight="bold">{h.nombre}</Typography>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" color="textSecondary">
+                                      Máximo disponible: {h.cantidad}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography variant="body1" sx={{ minWidth: 20, textAlign: 'center' }}>{current}</Typography>
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.id, 1, 0, h.cantidad)}
+                                        disabled={current >= h.cantidad}
+                                      >
+                                        +
+                                      </Button>
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        onClick={() => handleToolQuantityChange(h.id, -1, 0, h.cantidad)}
+                                        disabled={current <= 0}
+                                      >
+                                        -
+                                      </Button>
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* No Encontrados */}
+                        {toolsData.noEncontrados.length > 0 && (
+                          <>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#eceff1', p: 1 }}>
+                              NO ENCONTRADOS
+                            </Typography>
+                            <Box sx={{ p: 1 }}>
+                              {toolsData.noEncontrados.map(name => (
+                                <Typography key={name} variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  • {name}
+                                </Typography>
+                              ))}
+                            </Box>
+                          </>
+                        )}
+
+                        {/* Sin Disponibilidad */}
+                        {toolsData.sinDisponibilidad.length > 0 && (
+                          <>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, backgroundColor: '#eceff1', p: 1 }}>
+                              SIN DISPONIBILIDAD
+                            </Typography>
+                            <Box sx={{ p: 1 }}>
+                              {toolsData.sinDisponibilidad.map(h => (
+                                <Typography key={h.id} variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  • {h.nombre}
+                                </Typography>
+                              ))}
+                            </Box>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Box>
+                )}
                 
                 {dialogType === 'delete' && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
@@ -868,20 +1134,33 @@ const GestionarConglomerados: React.FC = () => {
               {/* El botón 'Guardar Fechas' se elimina: se usa el botón 'Siguiente' dentro del contenido del diálogo.
                   Las fechas no se persisten en el array `conglomerados` hasta que la asignación sea confirmada. */}
               {dialogType === 'assign' && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={loadingAssign ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                  onClick={handleAssign}
-                  disabled={loadingAssign || (
-                    !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id) ||
-                    brigadaData.auxiliarTecnicos.filter(a => a && a.id).length < 1 ||
-                    brigadaData.botanicos.filter(b => b && b.id).length < 1 ||
-                    brigadaData.coinvestigadores.filter(c => c && c.id).length < 2
+                <>
+                  {assignStep === 0 ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleNextStep}
+                      disabled={
+                        !(brigadaData.jefeBrigada && brigadaData.jefeBrigada.id) ||
+                        brigadaData.auxiliarTecnicos.filter(a => a && a.id).length < 1 ||
+                        brigadaData.botanicos.filter(b => b && b.id).length < 1 ||
+                        brigadaData.coinvestigadores.filter(c => c && c.id).length < 2
+                      }
+                    >
+                      Siguiente
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={loadingAssign ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                      onClick={handleAssign}
+                      disabled={loadingAssign}
+                    >
+                      {loadingAssign ? 'Asignando...' : 'Asignar Brigada'}
+                    </Button>
                   )}
-                >
-                  {loadingAssign ? 'Asignando...' : 'Asignar Brigada'}
-                </Button>
+                </>
               )}
               {dialogType === 'delete' && (
                 <Button 
